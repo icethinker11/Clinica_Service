@@ -3,6 +3,7 @@ node_modules/
 dist/
 dist-ssr/
 *.local
+frontend/estraverse.js 
 
 # Logs
 logs
@@ -32,6 +33,7 @@ venv/
 *.pyc
 build/
 dist/
+backend/greenlet.h
 
 # Virtual envs
 .venv/
