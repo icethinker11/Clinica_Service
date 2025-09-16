@@ -28,6 +28,10 @@ __pycache__/
 *.egg-info/
 .eggs/
 *.sqlite3
+venv/
+*.pyc
+build/
+dist/
 
 # Virtual envs
 .venv/
