@@ -1,9 +1,12 @@
 # --- Node / Frontend ---
 node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
 dist/
 dist-ssr/
 *.local
-frontend/estraverse.js 
+
 
 # Logs
 logs
@@ -55,7 +58,9 @@ ENV/
 # --- Otros ---
 .env
 
-
+# ==== Sistema (opcional) ====
+.DS_Store
+Thumbs.db
 
 
 
