@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Input from "../components/input";
 import Button from "../components/button";
+import { FaUser, FaLock } from "react-icons/fa";
 import { Link } from "react-router-dom";
 
 export default function Login() {
@@ -14,47 +15,48 @@ export default function Login() {
   };
 
   return (
-    <div className="flex h-screen">
-      {/* Lado izquierdo con gradiente */}
-      <div className="w-1/2 bg-gradient-to-b from-sky-600 to-sky-900" />
+    <div className="min-h-screen w-full flex bg-[url('/fondologin.jpg')] bg-cover bg-center">
+      <div className="flex-1" />
+      <div className="w-full md:w-2/5 min-h-screen flex items-center justify-center">
+        <div className="bg-white bg-opacity-80 shadow-lg p-8 w-full h-full flex items-center">
+          <form
+            onSubmit={handleLogin}
+            className="w-80 mx-auto flex flex-col space-y-4 text-black h-full justify-center"
+          >
+            <img src="/logo.jpg" alt="Logo" className="w-20 h-20 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-center text-[#4F7B8E] ">BIENVENIDO</h2>
+            <p className="text-l text-center">
+              Hola Bienvenido al sistema de Odontdent inicie sesion con sus credenciales.
+            </p>
+            <Input
+              placeholder="Usuario"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              icon={<FaUser />}
+            />
 
-      {/* Lado derecho */}
-      <div className="w-1/2 flex items-center justify-center">
-        <form
-          onSubmit={handleLogin}
-          className="w-80 flex flex-col space-y-4"
-        >
-          <h2 className="text-2xl font-bold text-center">INICIAR SESIÒN</h2>
-          <p className="text-sm text-center text-gray-600">
-            Hola, bienvenido de vuelta, llena cada espacio usando tus datos.
-          </p>
+            <Input
+              type="password"
+              placeholder="Contraseña"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              icon={<FaLock />}
+            />
 
-          <Input
-            placeholder="Usuario"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-          />
+            <div className="text-right text-sm font-bold text-[#4F7B8E] cursor-pointer hover:underline">
+              ¿Olvidaste tu contraseña?
+            </div>
 
-          <Input
-            type="password"
-            placeholder="Contraseña"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
+            <Button type="submit">Iniciar sesión</Button>
 
-          <div className="text-right text-xs text-gray-500 cursor-pointer hover:underline">
-            ¿Olvidaste tu contraseña?
-          </div>
-
-          <Button type="submit">Iniciar sesiòn</Button>
-       
-          <p className="text-sm text-center">
-            ¿No tienes una cuenta aùn?{" "}
-            <Link to="/register" className="font-bold hover:underline">
-              Resgistrate
-            </Link>
-          </p>
-        </form>
+            <p className="text-sm text-center">
+              ¿No tienes una cuenta aún?{" "}
+              <Link to="/register" className="font-bold hover:underline text-[#4F7B8E]">
+                Registrate
+              </Link>
+            </p>
+          </form>
+        </div>
       </div>
     </div>
   );
