@@ -3,10 +3,11 @@ from ..utils.database import db
 class Rol(db.Model):
     __tablename__ = "rol"
 
-    id_rol = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    nombre_perfil = db.Column(db.String(100), nullable=False)
-    descripcion = db.Column(db.Text)
-    estado_registro = db.Column(db.Boolean, default=True, nullable=False)
+    id_rol = db.Column(db.Integer, primary_key=True)
+    nombre = db.Column(db.String(50), nullable=False, unique=True)
 
+    # Relación con UsuarioRol
     usuarios = db.relationship("UsuarioRol", back_populates="rol")
-    menus = db.relationship("PerfilMenu", back_populates="rol")
+
+    # Relación con PerfilMenu
+    perfiles = db.relationship("PerfilMenu", back_populates="rol")

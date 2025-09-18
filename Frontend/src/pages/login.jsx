@@ -2,16 +2,33 @@ import { useState } from "react";
 import Input from "../components/input";
 import Button from "../components/button";
 import { FaUser, FaLock } from "react-icons/fa";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { loginUsuario } from "../services/authService";
 
 export default function Login() {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
+  const [form, setForm] = useState({
+    correo: "",
+    password: "",   // 👈 corregido
+  });
 
-  const handleLogin = (e) => {
+  const navigate = useNavigate();
+
+  const handleChange = (e) =>
+    setForm({ ...form, [e.target.name]: e.target.value });
+
+  const handleLogin = async (e) => {
     e.preventDefault();
-    console.log("Login con:", { username, password });
-    // Aquí llamas a authService.login(username, password)
+    try {
+      const res = await loginUsuario(form);
+      alert(res.data.msg);
+
+      localStorage.setItem("usuario", JSON.stringify(res.data));
+
+      navigate("/home");
+    } catch (err) {
+      console.error(err);
+      alert("Credenciales inválidas");
+    }
   };
 
   return (
@@ -24,22 +41,25 @@ export default function Login() {
             className="w-80 mx-auto flex flex-col space-y-4 text-black h-full justify-center"
           >
             <img src="/logo.jpg" alt="Logo" className="w-20 h-20 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-center text-[#4F7B8E] ">BIENVENIDO</h2>
+            <h2 className="text-2xl font-bold text-center text-[#4F7B8E]">BIENVENIDO</h2>
             <p className="text-l text-center">
-              Hola Bienvenido al sistema de Odontdent inicie sesion con sus credenciales.
+              Hola, bienvenido al sistema de Odontdent. Inicie sesión con sus credenciales.
             </p>
+
             <Input
-              placeholder="Usuario"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              name="correo"
+              placeholder="Correo"
+              value={form.correo}
+              onChange={handleChange}
               icon={<FaUser />}
             />
 
             <Input
               type="password"
+              name="password"   // 👈 corregido
               placeholder="Contraseña"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              value={form.password}
+              onChange={handleChange}
               icon={<FaLock />}
             />
 
@@ -52,7 +72,7 @@ export default function Login() {
             <p className="text-sm text-center">
               ¿No tienes una cuenta aún?{" "}
               <Link to="/register" className="font-bold hover:underline text-[#4F7B8E]">
-                Registrate
+                Regístrate
               </Link>
             </p>
           </form>
