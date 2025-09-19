@@ -1,6 +1,6 @@
 export default function Input({ type = "text", placeholder, icon, value, onChange }) {
   return (
-    <div className="flex items-center border rounded-full px-3 py-2 mb-2">
+    <div className="flex bg-white items-center border rounded-full px-3 py-2 mb-2">
       <input
         type={type}
         placeholder={placeholder}

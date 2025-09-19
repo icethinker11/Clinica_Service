@@ -2,7 +2,7 @@ import { useState } from "react";
 import Input from "../components/input";
 import Button from "../components/button";
 import { Link } from "react-router-dom";
-import { FaUser, FaEnvelope, FaLock, FaIdCard, FaCalendarAlt, FaPhone, FaMapMarkerAlt, FaUserTag } from "react-icons/fa";
+import { FaUser, FaEnvelope, FaLock, FaIdCard, FaPhone, FaMapMarkerAlt, FaUserTag } from "react-icons/fa";
 
 export default function Register() {
   const [form, setForm] = useState({
@@ -10,7 +10,7 @@ export default function Register() {
     email: "",
     password: "",
     confirm: "",
-    nombre: "",
+    nombres: "",
     apellidoPaterno: "",
     apellidoMaterno: "",
     dni: "",
@@ -31,8 +31,10 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-[url('/fondologin.jpg')] bg-cover bg-center">
-      <div className=" bg-white bg-opacity-80 rounded-4xl shadow-lg p-8"  >
+    <div className="min-h-screen w-full flex bg-[url('/fondoprueba.jpg')] bg-cover bg-center">
+      <div className="flex-1" />
+      <div className="w-full md:w-2/5 min-h-screen flex items-center justify-center">
+      <div className=" bg-white bg-opacity-80 shadow-lg p-8 w-full h-full flex justify-center items-center"  >
         <form
           onSubmit={handleRegister}
           className="w-140 flex flex-col gap-3 text-[#4F7B8E]"
@@ -53,7 +55,7 @@ export default function Register() {
           <Input name="dni" placeholder="DNI" onChange={handleChange} icon={<FaIdCard/>}/>
           <Input type="date" name="fechadenacimiento" onChange={handleChange} />
           <Input name="telefono" placeholder="Teléfono" onChange={handleChange} icon={<FaPhone />}/>
-          <Input name="direccion" placeholder="Dirección" onChange={handleChange} icon={<FaMapMarkerAlt  er/>}/>
+          <Input name="direccion" placeholder="Dirección" onChange={handleChange} icon={<FaMapMarkerAlt/>}/>
           <Input name="provincia" placeholder="Provincia" onChange={handleChange} icon={<FaMapMarkerAlt />}/>
 
           </div>
@@ -67,6 +69,7 @@ export default function Register() {
             </Link>
           </p>
         </form>
+        </div>
       </div>
     </div>
   );

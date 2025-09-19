@@ -2,20 +2,23 @@ import { useState } from "react";
 import Input from "../components/input";
 import Button from "../components/button";
 import { FaUser, FaLock } from "react-icons/fa";
-import { Link } from "react-router-dom";
+import { Link ,useNavigate} from "react-router-dom";
 
 export default function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const navigate = useNavigate(); // <-- Inicializa useNavigate
 
   const handleLogin = (e) => {
     e.preventDefault();
     console.log("Login con:", { username, password });
     // Aquí llamas a authService.login(username, password)
+    // Si el login es exitoso:
+    navigate("/menu"); // <-- Redirige al menú
   };
 
   return (
-    <div className="min-h-screen w-full flex bg-[url('/fondologin.jpg')] bg-cover bg-center">
+    <div className="min-h-screen w-full flex bg-[url('/fondoprueba.jpg')] bg-cover bg-center">
       <div className="flex-1" />
       <div className="w-full md:w-2/5 min-h-screen flex items-center justify-center">
         <div className="bg-white bg-opacity-80 shadow-lg p-8 w-full h-full flex items-center">
