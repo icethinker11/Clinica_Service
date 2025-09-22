@@ -3,7 +3,7 @@ import Input from "../components/input";
 import Button from "../components/button";
 import { Link } from "react-router-dom";
 import { FaUser, FaEnvelope, FaLock, FaIdCard, FaPhone, FaMapMarkerAlt, FaUserTag } from "react-icons/fa";
-import { registerUsuario } from "../services/authService"; // 👈 Servicio de API
+import { registerUsuario } from "../services/authService";
 
 export default function Register() {
   const [form, setForm] = useState({
@@ -20,67 +20,165 @@ export default function Register() {
     provincia: "",
   });
 
-  const handleChange = (e) =>
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const [errors, setErrors] = useState({});
+  const [mensajeRegistro, setMensajeRegistro] = useState("");
+  const [esExito, setEsExito] = useState(false);
 
+  const validateField = (name, value) => {
+    let error = "";
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    switch (name) {
+      case "email":
+        if (!value || !emailRegex.test(value)) {
+          error = "Correo no válido.";
+        }
+        break;
+      case "password":
+        if (!value || value.length < 6) {
+          error = "Mínimo 6 caracteres.";
+        }
+        break;
+      case "confirm":
+        if (value !== form.password) {
+          error = "Las contraseñas no coinciden.";
+        }
+        break;
+      case "nombres":
+      case "apellidoPaterno":
+      case "apellidoMaterno":
+        if (!value) {
+          error = "Campo requerido.";
+        }
+        break;
+      case "dni":
+        if (!value || !/^\d{8}$/.test(value)) {
+          error = "El DNI debe tener 8 dígitos.";
+        }
+        break;
+      case "telefono":
+        if (!value || !/^\d{9}$/.test(value)) {
+          error = "El teléfono debe tener 9 dígitos.";
+        }
+        break;
+      default:
+        break;
+    }
+    setErrors(prevErrors => ({ ...prevErrors, [name]: error }));
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm({ ...form, [name]: value });
+    setErrors(prevErrors => ({ ...prevErrors, [name]: "" }));
+  };
+
+  const handleBlur = (e) => {
+    const { name, value } = e.target;
+    validateField(name, value);
+  };
+  
   const handleRegister = async (e) => {
     e.preventDefault();
-
-    if (form.password !== form.confirm) {
-      alert("Las contraseñas no coinciden");
+    
+    const formFields = ["email", "password", "confirm", "nombres", "apellidoPaterno", "apellidoMaterno", "dni", "telefono"];
+    formFields.forEach(field => {
+      validateField(field, form[field]);
+    });
+    
+    if (Object.values(errors).some(error => error !== "")) {
+      setMensajeRegistro("Por favor, corrige los errores en el formulario.");
+      setEsExito(false);
       return;
     }
 
     try {
-      // 👇 Payload alineado con backend (usa "password")
       const payload = {
         dni: form.dni,
         nombre: form.nombres,
         apellido_paterno: form.apellidoPaterno,
         apellido_materno: form.apellidoMaterno,
-        fecha_nacimiento: form.fechadenacimiento, // formato YYYY-MM-DD
+        fecha_nacimiento: form.fechadenacimiento,
         correo: form.email,
         direccion: form.direccion,
         provincia: form.provincia,
         telefono: form.telefono,
-        password: form.password, // 👈 corregido
+        password: form.password,
       };
 
-      console.log("Payload enviado:", payload);
-
       const res = await registerUsuario(payload);
-      alert(res.data.msg);
+      setMensajeRegistro(res.data.msg);
+      setEsExito(true);
+
     } catch (err) {
       console.error(err);
-      alert("Error al registrar usuario");
+      const backendErrorMsg = err.response?.data?.msg || "Error al registrar usuario. Inténtalo de nuevo.";
+      setMensajeRegistro(backendErrorMsg);
+      setEsExito(false);
     }
   };
 
+  const getInputField = (name, placeholder, icon, type = "text") => {
+    const fieldsOrder = ["email", "password", "confirm", "nombres", "apellidoPaterno", "apellidoMaterno", "dni", "fechadenacimiento", "telefono", "direccion", "provincia"];
+    const fieldIndex = fieldsOrder.indexOf(name);
+    
+    const isLeftColumn = fieldIndex % 2 !== 0;
+    
+    const positionClasses = isLeftColumn ? "left-full ml-3" : "right-full mr-3";
+    const arrowClasses = isLeftColumn ? "after:border-r-red-600 after:left-0 after:-translate-x-full" : "after:border-l-red-600 after:right-0 after:translate-x-full";
+
+    return (
+      <div className="relative">
+        <Input
+          name={name}
+          type={type}
+          value={form[name]}
+          placeholder={placeholder}
+          onChange={handleChange}
+          onBlur={handleBlur}
+          icon={icon}
+        />
+        {errors[name] && (
+          <div className={`absolute top-1/2 transform -translate-y-1/2 ${positionClasses} z-10`}>
+            {/* Color del globo y la punta ajustados a red-600 */}
+            <div className={`relative bg-red-600 text-white text-xs rounded-md py-1 px-2 shadow-lg whitespace-nowrap before:content-[''] before:absolute before:top-1/2 before:-translate-y-1/2 before:border-[6px] before:border-solid before:border-transparent ${arrowClasses}`}>
+              {errors[name]}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+  
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-[url('/fondoprueba.jpg')] bg-cover bg-center">
-      <div className=" bg-white bg-opacity-80 rounded-4xl shadow-lg p-8">
-        <form
-          onSubmit={handleRegister}
-          className="w-140 flex flex-col gap-3 text-[#4F7B8E]"
-        >
+      <div className="bg-white bg-opacity-80 rounded-4xl shadow-lg p-8">
+        <form onSubmit={handleRegister} className="w-140 flex flex-col gap-3 text-[#4F7B8E]">
           <h2 className="text-2xl font-bold text-center">REGISTRARSE</h2>
           <p className="text-sm text-center">Rellena los campos con tus datos.</p>
 
           <div className="grid grid-cols-2 gap-3">
-            <Input name="email" value={form.email} placeholder="Correo" onChange={handleChange} icon={<FaEnvelope />} />
-            <Input type="password" name="password" value={form.password} placeholder="Contraseña" onChange={handleChange} icon={<FaLock />} />
-            <Input type="password" name="confirm" value={form.confirm} placeholder="Confirmar contraseña" onChange={handleChange} icon={<FaLock />} />
-            <Input name="nombres" value={form.nombres} placeholder="Nombres" onChange={handleChange} icon={<FaUserTag />} />
-            <Input name="apellidoPaterno" value={form.apellidoPaterno} placeholder="Apellido paterno" onChange={handleChange} icon={<FaUserTag />} />
-            <Input name="apellidoMaterno" value={form.apellidoMaterno} placeholder="Apellido materno" onChange={handleChange} icon={<FaUserTag />} />
-            <Input name="dni" value={form.dni} placeholder="DNI" onChange={handleChange} icon={<FaIdCard />} />
+            {getInputField("email", "Correo", <FaEnvelope />)}
+            {getInputField("password", "Contraseña", <FaLock />, "password")}
+            {getInputField("confirm", "Confirmar contraseña", <FaLock />, "password")}
+            {getInputField("nombres", "Nombres", <FaUserTag />)}
+            {getInputField("apellidoPaterno", "Apellido paterno", <FaUserTag />)}
+            {getInputField("apellidoMaterno", "Apellido materno", <FaUserTag />)}
+            {getInputField("dni", "DNI", <FaIdCard />)}
             <Input type="date" name="fechadenacimiento" value={form.fechadenacimiento} onChange={handleChange} />
-            <Input name="telefono" value={form.telefono} placeholder="Teléfono" onChange={handleChange} icon={<FaPhone />} />
-            <Input name="direccion" value={form.direccion} placeholder="Dirección" onChange={handleChange} icon={<FaMapMarkerAlt />} />
-            <Input name="provincia" value={form.provincia} placeholder="Provincia" onChange={handleChange} icon={<FaMapMarkerAlt />} />
+            {getInputField("telefono", "Teléfono", <FaPhone />)}
+            {getInputField("direccion", "Dirección", <FaMapMarkerAlt />)}
+            {getInputField("provincia", "Provincia", <FaMapMarkerAlt />)}
           </div>
 
           <Button type="submit">Registrar</Button>
+
+          {/* El color del mensaje de éxito/error general también se puede ajustar aquí */}
+          {mensajeRegistro && (
+            <p className={`text-center text-sm font-bold ${esExito ? "text-green-600" : "text-red-600"}`}>
+              {mensajeRegistro}
+            </p>
+          )}
 
           <p className="text-sm text-center">
             ¿Ya tienes una cuenta?{" "}
@@ -89,7 +187,7 @@ export default function Register() {
             </Link>
           </p>
         </form>
-        </div>
       </div>
+    </div>
   );
 }

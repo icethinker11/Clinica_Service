@@ -8,8 +8,12 @@ import { loginUsuario } from "../services/authService";
 export default function Login() {
   const [form, setForm] = useState({
     correo: "",
-    password: "",   // 👈 corregido
+    password: "",
   });
+
+  // 1. AÑADIR UN NUEVO ESTADO PARA LOS MENSAJES
+  const [mensaje, setMensaje] = useState("");
+  const [esExito, setEsExito] = useState(false); // Para cambiar el color del mensaje
 
   const navigate = useNavigate();
 
@@ -20,15 +24,23 @@ export default function Login() {
     e.preventDefault();
     try {
       const res = await loginUsuario(form);
-      alert(res.data.msg);
+      
+      // En lugar de alert, actualizamos el estado del mensaje
+      setMensaje(res.data.msg);
+      setEsExito(true);
 
       localStorage.setItem("usuario", res.data.nombre);
       
-
-      navigate("/menu");
+      // La navegación se retrasa un poco para que el usuario vea el mensaje
+      setTimeout(() => {
+        navigate("/menu");
+      }, 1500); // Espera 1.5 segundos
+      
     } catch (err) {
       console.error(err);
-      alert("Credenciales inválidas");
+      // Actualizamos el estado para el caso de error
+      setMensaje("Usuario o contraseña incorrectos");
+      setEsExito(false);
     }
   };
 
@@ -57,7 +69,7 @@ export default function Login() {
 
             <Input
               type="password"
-              name="password"   // 👈 corregido
+              name="password"
               placeholder="Contraseña"
               value={form.password}
               onChange={handleChange}
@@ -69,6 +81,17 @@ export default function Login() {
             </div>
 
             <Button type="submit">Iniciar sesión</Button>
+
+            {/* 2. MOSTRAR EL MENSAJE */}
+            {mensaje && (
+              <p
+                className={`text-center text-sm font-bold ${
+                  esExito ? "text-green-600" : "text-red-600"
+                }`}
+              >
+                {mensaje}
+              </p>
+            )}
 
             <p className="text-sm text-center">
               ¿No tienes una cuenta aún?{" "}
