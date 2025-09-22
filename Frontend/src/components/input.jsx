@@ -1,14 +1,11 @@
-export default function Input({ type = "text", placeholder, icon, value, onChange }) {
+export default function Input({ icon, ...props }) {
   return (
-    <div className="flex bg-white items-center border rounded-full px-3 py-2 mb-2">
+    <div className="flex items-center border p-2 rounded bg-white">
+      {icon && <span className="mr-2 text-gray-500">{icon}</span>}
       <input
-        type={type}
-        placeholder={placeholder}
-        value={value}
-        onChange={onChange}
-        className="flex-1 outline-none bg-transparent"
+        className="flex-1 bg-transparent outline-none"
+        {...props}   
       />
-      {icon && <span className="ml-2">{icon}</span>}
     </div>
   );
 }

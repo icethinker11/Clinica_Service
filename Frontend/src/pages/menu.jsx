@@ -8,7 +8,7 @@ import HeaderSection from "../components/headersection";
 
 export default function Menu() {
   const [activePage, setActivePage] = useState("inicio");
-  const username = localStorage.getItem("username") || "Usuario";
+  const username = localStorage.getItem("usuario") || "Usuario";
   const [form, setForm] = useState({
     username: "",
     email: "",
@@ -73,10 +73,10 @@ export default function Menu() {
         </div>
 
         <div className="px-8">
-          {/* Renderizado condicional */}
+          {/* contenido por opcion */}
           {activePage === "inicio" && (
             <div>
-              <HeaderSection title="Panel Principal" username={username} />
+              <HeaderSection title="PANEL PRINCIPAL" username={username} />
               <div className="text-center">
                 <p>Selecciona una opción del menú para comenzar.</p>
               </div>
@@ -132,7 +132,7 @@ export default function Menu() {
 
           {activePage === "reportes" && (
             <div>
-              <HeaderSection title="GENRAR REPORTES" username={username} underline/>
+              <HeaderSection title="GENERAR REPORTES" username={username} underline/>
               <div className="flex justify-center">
                 <p>Aquí se podrán visualizar y descargar reportes.</p>
               </div>
