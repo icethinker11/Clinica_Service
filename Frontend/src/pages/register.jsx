@@ -151,13 +151,15 @@ export default function Register() {
   };
   
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-[url('/fondoprueba.jpg')] bg-cover bg-center">
-      <div className="bg-white bg-opacity-80 rounded-4xl shadow-lg p-8">
-        <form onSubmit={handleRegister} className="w-140 flex flex-col gap-3 text-[#4F7B8E]">
-          <h2 className="text-2xl font-bold text-center">REGISTRARSE</h2>
-          <p className="text-sm text-center">Rellena los campos con tus datos.</p>
+    <div className="min-h-screen w-full grid grid-cols-5 bg-[url('/fondoprueba.jpg')] bg-cover bg-center">
+      <div className="col-span-3"></div>
+      <div className="col-span-2 flex items-center justify-center bg-white bg-opacity-80 shadow-lg min-h-screen">
+        <form onSubmit={handleRegister} className="w-4/6 flex flex-col gap-3 text-black">
+          <img src="/logo.jpg" alt="Logo" className="w-20 h-20 mx-auto mb-3" />
+          <h2 className="text-3xl font-bold text-center text-[#4495C0] mb-2">REGISTRARSE</h2>
+          <p className="text-m text-center mb-3">Bienvenido/a al sistema de Odontdent. Por favor complete el siguiente formulario para registrarse como nuevo usuario</p>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 ">
             {getInputField("email", "Correo", <FaEnvelope />)}
             {getInputField("password", "Contraseña", <FaLock />, "password")}
             {getInputField("confirm", "Confirmar contraseña", <FaLock />, "password")}
@@ -173,16 +175,15 @@ export default function Register() {
 
           <Button type="submit">Registrar</Button>
 
-          {/* El color del mensaje de éxito/error general también se puede ajustar aquí */}
           {mensajeRegistro && (
             <p className={`text-center text-sm font-bold ${esExito ? "text-green-600" : "text-red-600"}`}>
               {mensajeRegistro}
             </p>
           )}
 
-          <p className="text-sm text-center">
+          <p className="text-m text-center">
             ¿Ya tienes una cuenta?{" "}
-            <Link to="/login" className="font-bold hover:underline">
+            <Link to="/login" className="font-bold hover:underline text-[#4495C0]">
               Inicia sesión
             </Link>
           </p>

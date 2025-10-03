@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import Inicio from "./pages/inicio";
 import Login from "./pages/login";
 import Register from "./pages/register";
 import Menu from "./pages/menu";
@@ -7,10 +8,11 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* Ruta principal redirige a login */}
-        <Route path="/" element={<Navigate to="/login" />} />
+        
+        <Route path="/" element={<Navigate to="/inicio" />} />
 
         {/* Páginas */}
+        <Route path="/inicio" element={<Inicio />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/menu" element={<Menu />} />
