@@ -15,29 +15,36 @@ export default function Login() {
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleLogin = async (e) => {
-    e.preventDefault();
-    try {
-      const res = await loginUsuario(form);
+  e.preventDefault();
+  try {
+    const res = await loginUsuario(form);
+    console.log("🔹 Respuesta del backend:", res);
 
-      setPopup({
-        visible: true,
-        type: "success",
-        title: "¡Éxito!",
-        message: res.data.msg || "Login exitoso",
-      });
+    setPopup({
+      visible: true,
+      type: "success",
+      title: "¡Éxito!",
+      message: res?.msg || "Login exitoso",
+    });
 
-      localStorage.setItem("usuario", res.data.nombre);
+    // Guarda la información del usuario en el localStorage
+    localStorage.setItem("usuario", JSON.stringify({
+      id_usuario: res.id_usuario,
+      nombre: res.nombre,
+      correo: res.correo,
+    }));
 
-    } catch (err) {
-      console.error(err);
-      setPopup({
-        visible: true,
-        type: "error",
-        title: "Error",
-        message: "Usuario o contraseña incorrectos",
-      });
-    }
-  };
+  } catch (err) {
+    console.error("❌ Error al iniciar sesión:", err);
+    setPopup({
+      visible: true,
+      type: "error",
+      title: "Error",
+      message: err.response?.data?.msg || "Usuario o contraseña incorrectos",
+    });
+  }
+};
+
 
   const handlePopupClose = () => {
     const wasSuccess = popup.type === "success";

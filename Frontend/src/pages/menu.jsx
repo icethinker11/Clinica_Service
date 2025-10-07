@@ -1,178 +1,320 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import PanelPrincipal from "./PanelPrincipal";
 import SidebarItem from "../components/sidebaritem";
+import DataTable from "../components/table";
 import Input from "../components/input";
 import Button from "../components/button";
-import HeaderSection from "../components/headersection";
-import DataTable from "../components/table";
-import { 
-  FaHome, FaUserPlus, FaUserTag, FaFileAlt, FaSignOutAlt, 
-  FaEdit, FaTrash, FaUser, FaIdCard, FaEnvelope, FaLock, 
-  FaPhone, FaMapMarkerAlt, FaUserShield, FaUsers, FaCogs 
+import { logoutUsuario, getUsuarioActual } from "../services/authService";
+import {
+  FaHome, FaUserPlus, FaUserTag, FaFileAlt,
+  FaSignOutAlt, FaEdit, FaTrash, FaPlus
 } from "react-icons/fa";
 
-// Panel principal
-function PanelPrincipal({ username, users, roles, opciones, setActivePage }) {
-  return (
-    <>
-      <HeaderSection 
-        title="PANEL ADMINISTRADOR"
-        description={`Bienvenido, ${username}. Aquí tienes un resumen del sistema.`}
-        username={username}
-      />
-      <div className="p-8">
-        {/* Tarjetas de estadísticas */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 mt-4">
-          <div className="bg-white p-6 rounded-2xl shadow flex items-center gap-4">
-            <FaUsers className="text-blue-500 text-4xl" />
-            <div>
-              <h3 className="font-semibold">Usuarios</h3>
-              <p className="text-2xl">{users.length}</p>
-            </div>
-          </div>
-          <div className="bg-white p-6 rounded-2xl shadow flex items-center gap-4">
-            <FaUserShield className="text-green-500 text-4xl" />
-            <div>
-              <h3 className="font-semibold">Roles</h3>
-              <p className="text-2xl">{roles.length}</p>
-            </div>
-          </div>
-          <div className="bg-white p-6 rounded-2xl shadow flex items-center gap-4">
-            <FaCogs className="text-purple-500 text-4xl" />
-            <div>
-              <h3 className="font-semibold">Opciones</h3>
-              <p className="text-2xl">{opciones.length}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Accesos rápidos */}
-        <h2 className="text-xl font-bold mb-4">Accesos Rápidos</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div
-            onClick={() => setActivePage("usuarios")}
-            className="bg-blue-100 hover:bg-blue-200 p-6 rounded-xl shadow cursor-pointer text-center"
-          >
-            <FaUsers className="text-blue-600 text-3xl mb-2 mx-auto" />
-            <h3 className="font-semibold">Gestionar Usuarios</h3>
-          </div>
-          <div
-            onClick={() => setActivePage("roles")}
-            className="bg-green-100 hover:bg-green-200 p-6 rounded-xl shadow cursor-pointer text-center"
-          >
-            <FaUserShield className="text-green-600 text-3xl mb-2 mx-auto" />
-            <h3 className="font-semibold">Gestionar Roles</h3>
-          </div>
-          <div
-            onClick={() => setActivePage("opciones")}
-            className="bg-purple-100 hover:bg-purple-200 p-6 rounded-xl shadow cursor-pointer text-center"
-          >
-            <FaCogs className="text-purple-600 text-3xl mb-2 mx-auto" />
-            <h3 className="font-semibold">Gestionar Opciones</h3>
-          </div>
-        </div>
-      </div>
-    </>
-  );
-}
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 export default function Menu() {
+  const usuario = getUsuarioActual();
+  const username = usuario?.nombre || "Usuario";
+
   const [activePage, setActivePage] = useState("inicio");
-  const username = localStorage.getItem("usuario") || "Usuario";
   const [search, setSearch] = useState("");
 
-  // Datos de usuarios
-  const [users, setUsers] = useState([
-    { id: 1, nombres: "Alvaro", apellidoPaterno: "Arroyo", apellidoMaterno: "Gomez", dni:"12345678", fechadenacimiento:"1999-01-01", correo:"alvaro@mail.com", password:"1234", telefono:"987654321", direccion:"Av Siempre Viva", provincia:"Lima", rol: "Admin", estado: "Activo" },
-    { id: 2, nombres: "Maria", apellidoPaterno: "Lopez", apellidoMaterno: "Diaz", dni:"87654321", fechadenacimiento:"2000-05-10", correo:"maria@mail.com", password:"abcd", telefono:"999111222", direccion:"Jr Central", provincia:"Cusco", rol: "Usuario", estado: "Inactivo" },
-  ]);
-
-  // Datos de roles
-  const [roles, setRoles] = useState([
-    { id: 1, rol: "Admin", descripcion: "Administrador total", usuarios: 1, estado: "Activo" },
-    { id: 2, rol: "Usuario", descripcion: "Usuario normal", usuarios: 1, estado: "Activo" },
-  ]);
-
-  // Datos de opciones
-  const [opciones, setOpciones] = useState([
-    { id: 1, nombre: "Inicio", url: "/inicio", descripcion: "Página principal", orden: 1, estado: "Activo" },
-    { id: 2, nombre: "Usuarios", url: "/usuarios", descripcion: "Gestión de usuarios", orden: 2, estado: "Activo" },
-  ]);
+  const [users, setUsers] = useState([]);
+  const [roles, setRoles] = useState([]);
+  const [opciones, setOpciones] = useState([]);
 
   const [showForm, setShowForm] = useState(false);
+  const [formType, setFormType] = useState(""); 
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState(null);
 
+  // Formularios
   const [formUser, setFormUser] = useState({
-    nombres: "", apellidoPaterno: "", apellidoMaterno: "", dni: "", fechadenacimiento: "",
-    correo: "", password: "", telefono: "", direccion: "", provincia: "", rol: "Usuario", estado: "Activo",
+  nombre: "",
+  apellido_paterno: "",
+  apellido_materno: "",
+  dni: "",
+  fecha_nacimiento: "",
+  correo: "",
+  password: "",
+  telefono: "",
+  direccion: "",
+  provincia: "",
+  id_rol: "", // 👈 importante
+});
+
+
+  const [formRole, setFormRole] = useState({
+    nombre_perfil: "",
+    descripcion: "",
+    estado_registro: "ACTIVO",
   });
 
-  const [formRole, setFormRole] = useState({ rol: "", descripcion: "", estado: "Activo" });
-  const [formOpcion, setFormOpcion] = useState({ nombre:"", url:"", descripcion:"", orden:"", estado:"Activo" });
+  const [formOpcion, setFormOpcion] = useState({
+    nombre: "",
+    url_menu: "",
+    descripcion: "",
+    estado_registro: "ACTIVO",
+  });
 
-  const handleLogout = () => { localStorage.removeItem("usuario"); window.location.href = "/login"; };
-  const handleSearchChange = (e) => setSearch(e.target.value);
-  const handleCancel = () => { setShowForm(false); setIsEditing(false); setEditingId(null); };
+  // =========================
+  // 🔹 Cargar datos
+  // =========================
+  useEffect(() => {
+    fetchUsuarios();
+    fetchRoles();
+    fetchOpciones();
+  }, []);
 
-  // === Funciones Usuarios ===
-  const handleAddUserClick = () => { setIsEditing(false); setFormUser({ nombres:"", apellidoPaterno:"", apellidoMaterno:"", dni:"", fechadenacimiento:"", correo:"", password:"", telefono:"", direccion:"", provincia:"", rol:"Usuario", estado:"Activo" }); setShowForm(true); };
+  const fetchUsuarios = async () => {
+    try {
+      const res = await fetch(`${API_URL}/usuarios`);
+      const data = await res.json();
+      setUsers(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Error cargando usuarios:", err);
+    }
+  };
+
+  const fetchRoles = async () => {
+    try {
+      const res = await fetch(`${API_URL}/roles`);
+      const data = await res.json();
+      setRoles(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Error cargando roles:", err);
+    }
+  };
+
+  const fetchOpciones = async () => {
+    try {
+      const res = await fetch(`${API_URL}/opciones`);
+      const data = await res.json();
+      setOpciones(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Error cargando opciones:", err);
+    }
+  };
+
+  // =========================
+  // 🔹 CRUD Usuarios
+  // =========================
+  const handleAddUserClick = () => {
+    setFormType("usuario");
+    setFormUser({
+      nombre: "", apellido_paterno: "", apellido_materno: "", dni: "",
+      fecha_nacimiento: "", correo: "", password: "", telefono: "",
+      direccion: "", provincia: ""
+    });
+    setIsEditing(false);
+    setShowForm(true);
+  };
+
   const handleInputChange = (e) => setFormUser({ ...formUser, [e.target.name]: e.target.value });
-  const handleSaveUser = () => {
-    if(isEditing) setUsers(users.map(u => u.id === editingId ? {...formUser, id: editingId} : u));
-    else setUsers([...users, {...formUser, id: users.length ? Math.max(...users.map(u=>u.id))+1 : 1}]);
-    setShowForm(false); setIsEditing(false); setEditingId(null);
+
+  const handleSaveUser = async () => {
+  try {
+    console.log("Datos enviados:", formUser); // 👈 Verifica que incluya id_rol
+
+    const method = isEditing ? "PUT" : "POST";
+    const url = isEditing
+      ? `${API_URL}/usuarios/${editingId}`
+      : `${API_URL}/usuarios/register`;
+
+    const res = await fetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(formUser),
+    });
+
+    if (!res.ok) throw new Error("Error al guardar usuario");
+
+    await fetchUsuarios();
+    handleCancel();
+  } catch (err) {
+    console.error("Error guardando usuario:", err);
+  }
+};
+
+
+  const handleEditUser = (id) => {
+    const u = users.find(u => u.id_usuario === id);
+    setFormType("usuario");
+    setFormUser(u);
+    setIsEditing(true);
+    setEditingId(id);
+    setShowForm(true);
   };
-  const handleEditUser = (id) => { const u = users.find(u=>u.id===id); setFormUser(u); setIsEditing(true); setEditingId(id); setShowForm(true); };
-  const handleDeleteUser = (id) => { if(window.confirm("¿Seguro que quieres eliminar este usuario?")) setUsers(users.filter(u=>u.id!==id)); };
-  const filteredUsers = users.filter(u => `${u.nombres} ${u.apellidoPaterno} ${u.apellidoMaterno}`.toLowerCase().includes(search.toLowerCase()));
-  const userColumns = [
-    { label:"Nombre", field:"nombres" }, { label:"Apellido Paterno", field:"apellidoPaterno" },
-    { label:"Apellido Materno", field:"apellidoMaterno" }, { label:"Rol", field:"rol" }, { label:"Estado", field:"estado" }
-  ];
-  const userActions = [
-    { icon:<FaEdit className="text-blue-500 cursor-pointer"/>, onClick:(row)=>handleEditUser(row.id) },
-    { icon:<FaTrash className="text-red-500 cursor-pointer"/>, onClick:(row)=>handleDeleteUser(row.id) },
+
+  const handleDeleteUser = async (id) => {
+    if (window.confirm("¿Seguro que deseas eliminar este usuario?")) {
+      await fetch(`${API_URL}/usuarios/${id}`, { method: "DELETE" });
+      fetchUsuarios();
+    }
+  };
+
+  // =========================
+  // 🔹 CRUD Roles
+  // =========================
+  const handleAddRoleClick = () => {
+    setFormType("rol");
+    setFormRole({ nombre_perfil: "", descripcion: "", estado_registro: "ACTIVO" });
+    setIsEditing(false);
+    setShowForm(true);
+  };
+
+  const handleInputRoleChange = (e) => setFormRole({ ...formRole, [e.target.name]: e.target.value });
+
+  const handleSaveRole = async () => {
+    try {
+      const method = isEditing ? "PUT" : "POST";
+      const url = isEditing ? `${API_URL}/roles/${editingId}` : `${API_URL}/roles`;
+
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formRole),
+      });
+
+      if (!res.ok) throw new Error("Error al guardar rol");
+      await fetchRoles();
+      handleCancel();
+    } catch (err) {
+      console.error("Error guardando rol:", err);
+    }
+  };
+
+  const handleEditRole = (id) => {
+    const r = roles.find(r => r.id_rol === id);
+    setFormType("rol");
+    setFormRole(r);
+    setIsEditing(true);
+    setEditingId(id);
+    setShowForm(true);
+  };
+
+  const handleDeleteRole = async (id) => {
+    if (window.confirm("¿Seguro que deseas eliminar este rol?")) {
+      await fetch(`${API_URL}/roles/${id}`, { method: "DELETE" });
+      fetchRoles();
+    }
+  };
+
+  // =========================
+  // 🔹 CRUD Opciones
+  // =========================
+  const handleAddOpcionClick = () => {
+    setFormType("opcion");
+    setFormOpcion({ nombre: "", url_menu: "", descripcion: "", estado_registro: "ACTIVO" });
+    setIsEditing(false);
+    setShowForm(true);
+  };
+
+  const handleInputOpcionChange = (e) => setFormOpcion({ ...formOpcion, [e.target.name]: e.target.value });
+
+  const handleSaveOpcion = async () => {
+    try {
+      const method = isEditing ? "PUT" : "POST";
+      const url = isEditing ? `${API_URL}/opciones/${editingId}` : `${API_URL}/opciones`;
+
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formOpcion),
+      });
+
+      if (!res.ok) throw new Error("Error al guardar opción");
+      await fetchOpciones();
+      handleCancel();
+    } catch (err) {
+      console.error("Error guardando opción:", err);
+    }
+  };
+
+  const handleEditOpcion = (id) => {
+    const o = opciones.find(o => o.id_opcion_menu === id);
+    setFormType("opcion");
+    setFormOpcion(o);
+    setIsEditing(true);
+    setEditingId(id);
+    setShowForm(true);
+  };
+
+  const handleDeleteOpcion = async (id) => {
+    if (window.confirm("¿Seguro que deseas eliminar esta opción?")) {
+      await fetch(`${API_URL}/opciones/${id}`, { method: "DELETE" });
+      fetchOpciones();
+    }
+  };
+
+  // =========================
+  // 🔹 Columnas Tablas
+  // =========================
+    const userColumns = [
+    { label: "Nombre", field: "nombre" },
+    { label: "Apellido Paterno", field: "apellido_paterno" },
+    { label: "Correo", field: "correo" },
+    { label: "Rol", field: "rol" }, // 👈 Nueva columna
   ];
 
-  // === Funciones Roles ===
-  const handleAddRoleClick = () => { setIsEditing(false); setFormRole({rol:"", descripcion:"", estado:"Activo"}); setShowForm(true); };
-  const handleInputRoleChange = (e) => setFormRole({...formRole, [e.target.name]: e.target.value});
-  const handleSaveRole = () => {
-    if(isEditing) setRoles(roles.map(r => r.id===editingId ? {...formRole, id:editingId} : r));
-    else setRoles([...roles, {...formRole, id: roles.length ? Math.max(...roles.map(r=>r.id))+1 : 1, usuarios:0}]);
-    setShowForm(false); setIsEditing(false); setEditingId(null);
-  };
-  const handleEditRole = (id) => { const r=roles.find(r=>r.id===id); setFormRole(r); setIsEditing(true); setEditingId(id); setShowForm(true); };
-  const handleDeleteRole = (id) => { if(window.confirm("¿Seguro que quieres eliminar este rol?")) setRoles(roles.filter(r=>r.id!==id)); };
-  const filteredRoles = roles.filter(r=> r.rol.toLowerCase().includes(search.toLowerCase()) || r.descripcion.toLowerCase().includes(search.toLowerCase()));
   const roleColumns = [
-    {label:"Rol", field:"rol"}, {label:"Descripción", field:"descripcion"}, {label:"Usuarios", field:"usuarios"}, {label:"Estado", field:"estado"}
-  ];
-  const roleActions = [
-    { icon:<FaEdit className="text-blue-500 cursor-pointer"/>, onClick:(row)=>handleEditRole(row.id) },
-    { icon:<FaTrash className="text-red-500 cursor-pointer"/>, onClick:(row)=>handleDeleteRole(row.id) },
+    { label: "Nombre del perfil", field: "nombre_perfil" },
+    { label: "Descripción", field: "descripcion" },
+    { label: "Estado", field: "estado_registro" },
   ];
 
-  // === Funciones Opciones ===
-  const handleAddOpcionClick = () => { setIsEditing(false); setFormOpcion({nombre:"", url:"", descripcion:"", orden:"", estado:"Activo"}); setShowForm(true); };
-  const handleInputOpcionChange = (e) => setFormOpcion({...formOpcion, [e.target.name]: e.target.value});
-  const handleSaveOpcion = () => {
-    if(isEditing) setOpciones(opciones.map(o => o.id===editingId ? {...formOpcion, id:editingId} : o));
-    else setOpciones([...opciones, {...formOpcion, id: opciones.length ? Math.max(...opciones.map(o=>o.id))+1 : 1}]);
-    setShowForm(false); setIsEditing(false); setEditingId(null);
-  };
-  const handleEditOpcion = (id) => { const o=opciones.find(o=>o.id===id); setFormOpcion(o); setIsEditing(true); setEditingId(id); setShowForm(true); };
-  const handleDeleteOpcion = (id) => { if(window.confirm("¿Seguro que quieres eliminar esta opción?")) setOpciones(opciones.filter(o=>o.id!==id)); };
-  const filteredOpciones = opciones.filter(o=> o.nombre.toLowerCase().includes(search.toLowerCase()) || o.url.toLowerCase().includes(search.toLowerCase()));
   const opcionColumns = [
-    {label:"ID", field:"id"}, {label:"Nombre", field:"nombre"}, {label:"URL/Ruta", field:"url"}, 
-    {label:"Descripción", field:"descripcion"}, {label:"Orden", field:"orden"}, {label:"Estado", field:"estado"}
-  ];
-  const opcionActions = [
-    { icon:<FaEdit className="text-blue-500 cursor-pointer"/>, onClick:(row)=>handleEditOpcion(row.id) },
-    { icon:<FaTrash className="text-red-500 cursor-pointer"/>, onClick:(row)=>handleDeleteOpcion(row.id) },
+    { label: "Nombre", field: "nombre" },
+    { label: "URL", field: "url_menu" },
+    { label: "Descripción", field: "descripcion" },
+    { label: "Estado", field: "estado_registro" },
   ];
 
+  const userActions = [
+    { icon: <FaEdit className="text-blue-500 cursor-pointer" />, onClick: (row) => handleEditUser(row.id_usuario) },
+    { icon: <FaTrash className="text-red-500 cursor-pointer" />, onClick: (row) => handleDeleteUser(row.id_usuario) },
+  ];
+
+  const roleActions = [
+    { icon: <FaEdit className="text-blue-500 cursor-pointer" />, onClick: (row) => handleEditRole(row.id_rol) },
+    { icon: <FaTrash className="text-red-500 cursor-pointer" />, onClick: (row) => handleDeleteRole(row.id_rol) },
+  ];
+
+  const opcionActions = [
+    { icon: <FaEdit className="text-blue-500 cursor-pointer" />, onClick: (row) => handleEditOpcion(row.id_opcion_menu) },
+    { icon: <FaTrash className="text-red-500 cursor-pointer" />, onClick: (row) => handleDeleteOpcion(row.id_opcion_menu) },
+  ];
+
+  // =========================
+  // 🔹 Sidebar Dinámico
+  // =========================
+  const basePages = ["usuarios", "roles", "opciones"];
+
+  const sidebarItems = [
+    { icon: FaHome, label: "Inicio", page: "inicio" },
+    { icon: FaUserPlus, label: "Usuarios", page: "usuarios" },
+    { icon: FaUserTag, label: "Roles", page: "roles" },
+    { icon: FaFileAlt, label: "Opciones", page: "opciones" },
+    ...opciones
+      .filter(op => op.url_menu && !basePages.includes(op.url_menu.replace("/", "")))
+      .map(op => ({
+        icon: FaFileAlt,
+        label: op.nombre,
+        page: op.url_menu.replace("/", ""),
+      })),
+  ];
+
+  const handleCancel = () => {
+    setShowForm(false);
+    setIsEditing(false);
+    setEditingId(null);
+  };
+
+  const handleLogout = () => logoutUsuario();
+
+  // =========================
+  // 🖥️ Renderizado
+  // =========================
   return (
     <div className="flex min-h-screen">
       {/* Sidebar */}
@@ -181,132 +323,156 @@ export default function Menu() {
           <img src="/logo.jpg" alt="Logo" className="w-16 h-16 mb-2 rounded-2xl" />
           <span className="font-extrabold underline text-lg">ODONTDENT</span>
         </div>
+
         <nav className="flex-1">
           <ul className="space-y-4">
-            <SidebarItem icon={FaHome} label="Panel principal" onClick={()=>setActivePage("inicio")} hoverColor="#5c7bb4"/>
-            <SidebarItem icon={FaUserPlus} label="Mantenimiento de usuarios" onClick={()=>setActivePage("usuarios")} hoverColor="#5c7bb4"/>
-            <SidebarItem icon={FaUserTag} label="Mantenimiento de roles" onClick={()=>setActivePage("roles")} hoverColor="#5c7bb4"/>
-            <SidebarItem icon={FaFileAlt} label="Mantenimiento de opciones" onClick={()=>setActivePage("opciones")} hoverColor="#5c7bb4"/>
+            {sidebarItems.map((item) => (
+            <SidebarItem
+              key={item.label || item.page}   // 👈 Usamos una propiedad única y estable
+              icon={item.icon}
+              label={item.label}
+              onClick={() => setActivePage(item.page)}
+              hoverColor="#5c7bb4"
+            />
+          ))}
+
           </ul>
         </nav>
+
         <div className="mt-8 w-full bg-[#466eb8] text-white rounded">
-          <SidebarItem icon={FaSignOutAlt} label="Cerrar sesión" onClick={handleLogout} hoverColor="#ee4e4e"/>
+          <SidebarItem icon={FaSignOutAlt} label="Cerrar sesión" onClick={handleLogout} hoverColor="#ee4e4e" />
         </div>
       </aside>
 
-      {/* Contenido principal */}
-      <main className="flex-1 bg-gray-100">
-        {activePage==="inicio" && <PanelPrincipal username={username} users={users} roles={roles} opciones={opciones} setActivePage={setActivePage} />}
-
-        {/* USUARIOS */}
-        {activePage==="usuarios" && (
-          <>
-            <HeaderSection title="GESTIÓN DE USUARIOS" description="Aquí se podrán gestionar las cuentas de los usuarios." username={username} />
-            {!showForm ? (
-              <div className="p-8">
-                <div className="flex gap-4 mb-4 items-center">
-                  <Input placeholder="Buscar usuario..." value={search} onChange={handleSearchChange} className="flex-grow max-w-lg" icon={<FaUser />} />
-                  <Button onClick={handleAddUserClick}>Añadir usuario</Button>
-                </div>
-                <DataTable columns={userColumns} data={filteredUsers} actions={userActions} />
-              </div>
-            ) : (
-              <div className="p-8">
-                <div className="bg-white p-6 rounded shadow max-w-4xl mx-auto flex flex-col gap-4">
-                  <h2 className="text-xl font-bold text-center">{isEditing ? "Editar Usuario" : "Añadir Nuevo Usuario"}</h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Input name="nombres" placeholder="Nombres" value={formUser.nombres} onChange={handleInputChange} icon={<FaUser />} />
-                    <Input name="apellidoPaterno" placeholder="Apellido Paterno" value={formUser.apellidoPaterno} onChange={handleInputChange} icon={<FaUser />} />
-                    <Input name="apellidoMaterno" placeholder="Apellido Materno" value={formUser.apellidoMaterno} onChange={handleInputChange} icon={<FaUser />} />
-                    <Input name="dni" placeholder="DNI" value={formUser.dni} onChange={handleInputChange} icon={<FaIdCard />} />
-                    <Input type="date" name="fechadenacimiento" placeholder="Fecha de Nacimiento" value={formUser.fechadenacimiento} onChange={handleInputChange} icon={<FaIdCard />} />
-                    <Input name="correo" placeholder="Correo" value={formUser.correo} onChange={handleInputChange} icon={<FaEnvelope />} />
-                    <Input type="password" name="password" placeholder="Contraseña" value={formUser.password} onChange={handleInputChange} icon={<FaLock />} />
-                    <Input name="telefono" placeholder="Teléfono" value={formUser.telefono} onChange={handleInputChange} icon={<FaPhone />} />
-                    <Input name="direccion" placeholder="Dirección" value={formUser.direccion} onChange={handleInputChange} icon={<FaMapMarkerAlt />} />
-                    <Input name="provincia" placeholder="Provincia" value={formUser.provincia} onChange={handleInputChange} icon={<FaMapMarkerAlt />} />
-                    <Input name="rol" placeholder="Rol" value={formUser.rol} onChange={handleInputChange} icon={<FaUserShield />} />
-                  </div>
-                  <div className="flex justify-between gap-4 mt-2">
-                    <Button onClick={handleCancel} bgColor="#f87171" hoverColor="#ef4444">Cancelar</Button>
-                    <Button onClick={handleSaveUser} bgColor={isEditing ? "#60a5fa" : "#4ade80"} hoverColor={isEditing ? "#2563eb" : "#16a34a"}>
-                      {isEditing ? "Guardar Cambios" : "Guardar Usuario"}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            )}
-          </>
+      {/* Contenido */}
+      <main className="flex-1 bg-gray-100 p-6">
+        {activePage === "inicio" && (
+          <PanelPrincipal username={username} users={users} roles={roles} opciones={opciones} setActivePage={setActivePage} />
         )}
 
-        {/* ROLES */}
-        {activePage==="roles" && (
-          <>
-            <HeaderSection title="GESTIÓN DE ROLES" description="Aquí se podrán gestionar los roles del sistema." username={username} />
-            {!showForm ? (
-              <div className="p-8">
-                <div className="flex gap-4 mb-4 items-center">
-                  <Input placeholder="Buscar rol..." value={search} onChange={handleSearchChange} className="flex-grow max-w-lg" />
-                  <Button onClick={handleAddRoleClick}>Añadir rol</Button>
-                </div>
-                <DataTable columns={roleColumns} data={filteredRoles} actions={roleActions} />
-              </div>
-            ) : (
-              <div className="p-8">
-                <div className="bg-white p-6 rounded shadow max-w-2xl mx-auto flex flex-col gap-4">
-                  <h2 className="text-xl font-bold text-center">{isEditing ? "Editar Rol" : "Añadir Nuevo Rol"}</h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Input name="rol" placeholder="Rol" value={formRole.rol} onChange={handleInputRoleChange} />
-                    <Input name="descripcion" placeholder="Descripción" value={formRole.descripcion} onChange={handleInputRoleChange} />
-                    <Input name="estado" placeholder="Estado" value={formRole.estado} onChange={handleInputRoleChange} />
-                  </div>
-                  <div className="flex justify-between gap-4 mt-2">
-                    <Button onClick={handleCancel} bgColor="#f87171" hoverColor="#ef4444">Cancelar</Button>
-                    <Button onClick={handleSaveRole} bgColor={isEditing ? "#60a5fa" : "#4ade80"} hoverColor={isEditing ? "#2563eb" : "#16a34a"}>
-                      {isEditing ? "Guardar Cambios" : "Guardar Rol"}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            )}
-          </>
+        {activePage === "usuarios" && (
+          <div>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">Usuarios</h2>
+              <Button onClick={handleAddUserClick} icon={<FaPlus />}>Agregar Usuario</Button>
+            </div>
+            <DataTable title="Usuarios" data={users} columns={userColumns} actions={userActions} />
+          </div>
         )}
 
-        {/* OPCIONES */}
-        {activePage==="opciones" && (
-          <>
-            <HeaderSection title="GESTIÓN DE OPCIONES" description="Aquí se podrán gestionar las opciones del sistema." username={username} />
-            {!showForm ? (
-              <div className="p-8">
-                <div className="flex gap-4 mb-4 items-center">
-                  <Input placeholder="Buscar opción..." value={search} onChange={handleSearchChange} className="flex-grow max-w-lg" />
-                  <Button onClick={handleAddOpcionClick}>Añadir opción</Button>
-                </div>
-                <DataTable columns={opcionColumns} data={filteredOpciones} actions={opcionActions} />
-              </div>
-            ) : (
-              <div className="p-8">
-                <div className="bg-white p-6 rounded shadow max-w-2xl mx-auto flex flex-col gap-4">
-                  <h2 className="text-xl font-bold text-center">{isEditing ? "Editar Opción" : "Añadir Nueva Opción"}</h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Input name="nombre" placeholder="Nombre" value={formOpcion.nombre} onChange={handleInputOpcionChange} />
-                    <Input name="url" placeholder="URL/Ruta" value={formOpcion.url} onChange={handleInputOpcionChange} />
-                    <Input name="descripcion" placeholder="Descripción" value={formOpcion.descripcion} onChange={handleInputOpcionChange} />
-                    <Input name="orden" placeholder="Orden" value={formOpcion.orden} onChange={handleInputOpcionChange} />
-                    <Input name="estado" placeholder="Estado" value={formOpcion.estado} onChange={handleInputOpcionChange} />
-                  </div>
-                  <div className="flex justify-between gap-4 mt-2">
-                    <Button onClick={handleCancel} bgColor="#f87171" hoverColor="#ef4444">Cancelar</Button>
-                    <Button onClick={handleSaveOpcion} bgColor={isEditing ? "#60a5fa" : "#4ade80"} hoverColor={isEditing ? "#2563eb" : "#16a34a"}>
-                      {isEditing ? "Guardar Cambios" : "Guardar Opción"}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            )}
-          </>
+        {activePage === "roles" && (
+          <div>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">Roles</h2>
+              <Button onClick={handleAddRoleClick} icon={<FaPlus />}>Agregar Rol</Button>
+            </div>
+            <DataTable title="Roles" data={roles} columns={roleColumns} actions={roleActions} />
+          </div>
+        )}
+
+        {activePage === "opciones" && (
+          <div>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">Opciones</h2>
+              <Button onClick={handleAddOpcionClick} icon={<FaPlus />}>Agregar Opción</Button>
+            </div>
+            <DataTable title="Opciones" data={opciones} columns={opcionColumns} actions={opcionActions} />
+          </div>
         )}
       </main>
+
+      {/* Modal */}
+      {showForm && (
+        <div className="fixed inset-0 flex justify-center items-center bg-black bg-opacity-50 z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-96">
+            <h2 className="text-lg font-bold mb-4">
+              {isEditing ? "Editar" : "Registrar"}{" "}
+              {formType === "usuario" ? "Usuario" : formType === "rol" ? "Rol" : "Opción"}
+            </h2>
+
+            {formType === "usuario" && (
+              <>
+                <Input
+                  label="Nombre"
+                  name="nombre"
+                  value={formUser.nombre}
+                  onChange={handleInputChange}
+                />
+                <Input
+                  label="Apellido Paterno"
+                  name="apellido_paterno"
+                  value={formUser.apellido_paterno}
+                  onChange={handleInputChange}
+                />
+                <Input
+                  label="Correo"
+                  name="correo"
+                  value={formUser.correo}
+                  onChange={handleInputChange}
+                />
+
+                <label className="block text-sm font-medium text-gray-700 mt-3 mb-1">
+                  Rol
+                </label>
+                <select
+                  name="id_rol"
+                  value={formUser.id_rol || ""}
+                  onChange={(e) =>
+                    setFormUser({ ...formUser, id_rol: parseInt(e.target.value) })
+                  }
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Seleccione un rol</option>
+                  {roles.map((r) => (
+                    <option key={r.id_rol} value={r.id_rol}>
+                      {r.nombre_perfil}
+                    </option>
+                  ))}
+                </select>
+              </>
+            )}
+
+
+            {formType === "rol" && (
+              <>
+                <Input label="Nombre del Perfil" name="nombre_perfil" value={formRole.nombre_perfil} onChange={handleInputRoleChange} />
+                <Input label="Descripción" name="descripcion" value={formRole.descripcion} onChange={handleInputRoleChange} />
+              </>
+            )}
+
+            {formType === "opcion" && (
+              <>
+                <Input label="Nombre" name="nombre" value={formOpcion.nombre} onChange={handleInputOpcionChange} />
+                <Input label="URL Menú" name="url_menu" value={formOpcion.url_menu} onChange={handleInputOpcionChange} />
+                <Input label="Descripción" name="descripcion" value={formOpcion.descripcion} onChange={handleInputOpcionChange} />
+                <Input label="Estado" name="estado_registro" value={formOpcion.estado_registro} onChange={handleInputOpcionChange} />
+              </>
+            )}
+
+            <div className="flex justify-end mt-4 space-x-2">
+              <Button onClick={handleCancel} className="bg-gray-400 hover:bg-gray-500">Cancelar</Button>
+              <Button onClick={
+                formType === "usuario" ? handleSaveUser :
+                formType === "rol" ? handleSaveRole :
+                handleSaveOpcion
+              }>
+                {isEditing ? "Actualizar" : "Guardar"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
