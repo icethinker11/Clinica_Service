@@ -42,7 +42,7 @@ export default function Login() {
   const handlePopupClose = () => {
     const wasSuccess = popup.type === "success";
     setPopup({ ...popup, visible: false });
-    if (wasSuccess) navigate("/menu");
+    if (wasSuccess) navigate("/menuAdmin");
   };
 
   return (
