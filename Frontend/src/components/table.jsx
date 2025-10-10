@@ -1,11 +1,16 @@
-export default function DataTable({ columns, data, actions }) {
+import React from "react";
+
+function DataTable({ columns, data, actions }) {
   if (!data || data.length === 0) {
     return (
       <div className="overflow-x-auto rounded border">
         <table className="min-w-full bg-white shadow">
           <tbody>
             <tr>
-              <td colSpan={columns.length + (actions?.length || 0)} className="text-center py-4 text-gray-500">
+              <td
+                colSpan={columns.length + (actions?.length || 0)}
+                className="text-center py-4 text-gray-500"
+              >
                 No se encontraron registros.
               </td>
             </tr>
@@ -23,12 +28,17 @@ export default function DataTable({ columns, data, actions }) {
             {columns.map((col, idx) => (
               <th key={idx} className="py-2 px-4 text-center">{col.label}</th>
             ))}
-            {actions && actions.length > 0 && <th className="py-2 px-4 text-center">Acciones</th>}
+            {actions && actions.length > 0 && (
+              <th className="py-2 px-4 text-center">Acciones</th>
+            )}
           </tr>
         </thead>
         <tbody>
           {data.map((row) => (
-            <tr key={row.id} className="border-b hover:bg-gray-50">
+            <tr
+              key={row.id || row.id_opcion_menu || row.id_rol || row.nombre}
+              className="border-b hover:bg-gray-50"
+            >
               {columns.map((col, idx) => (
                 <td key={idx} className="py-2 px-4 text-center">
                   {col.render ? col.render(row[col.field], row) : row[col.field]}
@@ -50,3 +60,6 @@ export default function DataTable({ columns, data, actions }) {
     </div>
   );
 }
+
+export default DataTable;  // 👈 AGREGA ESTA LÍNEA
+
