@@ -19,10 +19,9 @@ def register():
         dni = data.get("dni")
         correo = data.get("correo")
         password = data.get("password")
-        id_rol = data.get("id_rol")
 
-        if not dni or not correo or not password or not id_rol:
-            return jsonify({"error": "DNI, correo, contraseña y rol son obligatorios"}), 400
+        if not dni or not correo or not password:
+            return jsonify({"error": "DNI, correo y contraseña son obligatorios"}), 400
 
         # === Validar duplicados ===
         if Usuario.query.filter_by(correo=correo).first():
@@ -30,7 +29,9 @@ def register():
         if Usuario.query.filter_by(dni=dni).first():
             return jsonify({"error": "El DNI ya está registrado"}), 400
 
-        # === Validar existencia del rol ===
+        # === Asignar rol por defecto ===
+        id_rol = data.get("id_rol", 1)  # 1 = Usuario por defecto
+
         rol = Rol.query.get(id_rol)
         if not rol:
             return jsonify({"error": f"El rol con ID {id_rol} no existe"}), 400
@@ -78,12 +79,13 @@ def register():
                 "correo": nuevo_usuario.correo,
                 "rol": rol.nombre_perfil
             }
-        }), 201
+        }), 200
 
     except Exception as e:
         db.session.rollback()
         print(f"❌ Error al registrar usuario: {e}")
         return jsonify({"error": f"Error al registrar usuario: {str(e)}"}), 500
+
 
 
 # =========================================================
@@ -107,7 +109,7 @@ def login():
             "id_usuario": usuario.id_usuario,
             "nombre": usuario.nombre,
             "correo": usuario.correo
-        }), 200
+        }), 201
 
     except Exception as e:
         print("❌ Error al iniciar sesión:", str(e))

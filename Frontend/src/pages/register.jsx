@@ -2,8 +2,9 @@ import { useState } from "react";
 import Input from "../components/input";
 import Button from "../components/button";
 import { Link } from "react-router-dom";
-import { FaUser, FaEnvelope, FaLock, FaIdCard, FaPhone, FaMapMarkerAlt, FaUserTag } from "react-icons/fa";
+import { FaEnvelope, FaLock, FaIdCard, FaPhone, FaUserTag, FaMapMarkerAlt } from "react-icons/fa";
 import { registerUsuario } from "../services/authService";
+import StatusPopup from "../components/StatusPopup";
 
 export default function Register() {
   const [form, setForm] = useState({
@@ -21,8 +22,7 @@ export default function Register() {
   });
 
   const [errors, setErrors] = useState({});
-  const [mensajeRegistro, setMensajeRegistro] = useState("");
-  const [esExito, setEsExito] = useState(false);
+  const [popup, setPopup] = useState({ open: false, type: "success", title: "", message: "" });
 
   const validateField = (name, value) => {
     let error = "";
@@ -30,65 +30,62 @@ export default function Register() {
 
     switch (name) {
       case "email":
-        if (!value || !emailRegex.test(value)) {
-          error = "Correo no válido.";
-        }
+        if (!value || !emailRegex.test(value)) error = "Correo no válido.";
         break;
       case "password":
-        if (!value || value.length < 6) {
-          error = "Mínimo 6 caracteres.";
-        }
+        if (!value || value.length < 6) error = "Mínimo 6 caracteres.";
         break;
       case "confirm":
-        if (value !== form.password) {
-          error = "Las contraseñas no coinciden.";
-        }
+        if (value !== form.password) error = "Las contraseñas no coinciden.";
         break;
       case "nombres":
       case "apellidoPaterno":
       case "apellidoMaterno":
-        if (!value) {
-          error = "Campo requerido.";
-        }
+        if (!value) error = "Campo requerido.";
         break;
       case "dni":
-        if (!value || !/^\d{8}$/.test(value)) {
-          error = "El DNI debe tener 8 dígitos.";
-        }
+        if (!value || !/^\d{8}$/.test(value)) error = "El DNI debe tener 8 dígitos.";
         break;
       case "telefono":
-        if (!value || !/^\d{9}$/.test(value)) {
-          error = "El teléfono debe tener 9 dígitos.";
-        }
+        if (!value || !/^\d{9}$/.test(value)) error = "El teléfono debe tener 9 dígitos.";
         break;
       default:
         break;
     }
-    setErrors(prevErrors => ({ ...prevErrors, [name]: error }));
+    return error;
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm({ ...form, [name]: value });
-    setErrors(prevErrors => ({ ...prevErrors, [name]: "" }));
+    setErrors(prev => ({ ...prev, [name]: "" }));
   };
 
   const handleBlur = (e) => {
     const { name, value } = e.target;
-    validateField(name, value);
+    const error = validateField(name, value);
+    setErrors(prev => ({ ...prev, [name]: error }));
   };
-  
+
   const handleRegister = async (e) => {
     e.preventDefault();
-    
+
+    // Validar todos los campos obligatorios
     const formFields = ["email", "password", "confirm", "nombres", "apellidoPaterno", "apellidoMaterno", "dni", "telefono"];
+    const newErrors = {};
     formFields.forEach(field => {
-      validateField(field, form[field]);
+      const error = validateField(field, form[field]);
+      if (error) newErrors[field] = error;
     });
-    
-    if (Object.values(errors).some(error => error !== "")) {
-      setMensajeRegistro("Por favor, corrige los errores en el formulario.");
-      setEsExito(false);
+    setErrors(newErrors);
+
+    if (Object.keys(newErrors).length > 0) {
+      setPopup({
+        open: true,
+        type: "error",
+        title: "Error en el formulario",
+        message: "Por favor, corrige los errores antes de registrar."
+      });
       return;
     }
 
@@ -104,26 +101,55 @@ export default function Register() {
         provincia: form.provincia,
         telefono: form.telefono,
         password: form.password,
+        id_rol: 1 // rol por defecto
       };
 
       const res = await registerUsuario(payload);
-      setMensajeRegistro(res.data.msg);
-      setEsExito(true);
+
+      // ✅ Aquí ya usamos res.msg directamente
+      const mensaje = res?.msg || res?.message || "Usuario registrado correctamente";
+
+      setPopup({
+        open: true,
+        type: "success",
+        title: "Registro exitoso",
+        message: mensaje
+      });
+
+      // Limpiar formulario
+      setForm({
+        email: "",
+        password: "",
+        confirm: "",
+        nombres: "",
+        apellidoPaterno: "",
+        apellidoMaterno: "",
+        dni: "",
+        fechadenacimiento: "",
+        telefono: "",
+        direccion: "",
+        provincia: "",
+      });
+      setErrors({});
 
     } catch (err) {
       console.error(err);
-      const backendErrorMsg = err.response?.data?.msg || "Error al registrar usuario. Inténtalo de nuevo.";
-      setMensajeRegistro(backendErrorMsg);
-      setEsExito(false);
+
+      const backendErrorMsg = err?.msg || err?.error || err?.message || "Error al registrar usuario. Inténtalo de nuevo.";
+
+      setPopup({
+        open: true,
+        type: "error",
+        title: "Error al registrar",
+        message: backendErrorMsg
+      });
     }
   };
 
   const getInputField = (name, placeholder, icon, type = "text") => {
     const fieldsOrder = ["email", "password", "confirm", "nombres", "apellidoPaterno", "apellidoMaterno", "dni", "fechadenacimiento", "telefono", "direccion", "provincia"];
     const fieldIndex = fieldsOrder.indexOf(name);
-    
     const isLeftColumn = fieldIndex % 2 !== 0;
-    
     const positionClasses = isLeftColumn ? "left-full ml-3" : "right-full mr-3";
     const arrowClasses = isLeftColumn ? "after:border-r-red-600 after:left-0 after:-translate-x-full" : "after:border-l-red-600 after:right-0 after:translate-x-full";
 
@@ -140,7 +166,6 @@ export default function Register() {
         />
         {errors[name] && (
           <div className={`absolute top-1/2 transform -translate-y-1/2 ${positionClasses} z-10`}>
-            {/* Color del globo y la punta ajustados a red-600 */}
             <div className={`relative bg-red-600 text-white text-xs rounded-md py-1 px-2 shadow-lg whitespace-nowrap before:content-[''] before:absolute before:top-1/2 before:-translate-y-1/2 before:border-[6px] before:border-solid before:border-transparent ${arrowClasses}`}>
               {errors[name]}
             </div>
@@ -149,7 +174,7 @@ export default function Register() {
       </div>
     );
   };
-  
+
   return (
     <div className="min-h-screen w-full grid grid-cols-5 bg-[url('/fondoprueba.jpg')] bg-cover bg-center">
       <div className="col-span-3"></div>
@@ -157,7 +182,7 @@ export default function Register() {
         <form onSubmit={handleRegister} className="w-4/6 flex flex-col gap-3 text-black">
           <img src="/logo.jpg" alt="Logo" className="w-20 h-20 mx-auto mb-3" />
           <h2 className="text-3xl font-bold text-center text-[#4495C0] mb-2">REGISTRARSE</h2>
-          <p className="text-m text-center mb-3">Bienvenido/a al sistema de Odontdent. Por favor complete el siguiente formulario para registrarse como nuevo usuario</p>
+          <p className="text-m text-center mb-3">Bienvenido/a al sistema de Odontdent. Complete el formulario para registrarse</p>
 
           <div className="grid grid-cols-2 gap-3 ">
             {getInputField("email", "Correo", <FaEnvelope />)}
@@ -175,12 +200,6 @@ export default function Register() {
 
           <Button type="submit">Registrar</Button>
 
-          {mensajeRegistro && (
-            <p className={`text-center text-sm font-bold ${esExito ? "text-green-600" : "text-red-600"}`}>
-              {mensajeRegistro}
-            </p>
-          )}
-
           <p className="text-m text-center">
             ¿Ya tienes una cuenta?{" "}
             <Link to="/login" className="font-bold hover:underline text-[#4495C0]">
@@ -189,6 +208,16 @@ export default function Register() {
           </p>
         </form>
       </div>
+
+      {/* Popup */}
+      {popup.open && (
+        <StatusPopup
+          type={popup.type}
+          title={popup.title}
+          message={popup.message}
+          onClose={() => setPopup({ ...popup, open: false })}
+        />
+      )}
     </div>
   );
 }
