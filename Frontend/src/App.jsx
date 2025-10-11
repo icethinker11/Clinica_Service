@@ -2,7 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import Inicio from "./pages/inicio";
 import Login from "./pages/login";
 import Register from "./pages/register";
-import Menu from "./pages/menu";
+import Menu from "./pages/menuAdmin";
 
 function App() {
   return (
@@ -15,7 +15,7 @@ function App() {
         <Route path="/inicio" element={<Inicio />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/menu" element={<Menu />} />
+        <Route path="/menuAdmin" element={<Menu />} />
 
 
         {/* Si la ruta no existe */}
