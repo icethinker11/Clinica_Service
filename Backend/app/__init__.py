@@ -3,6 +3,7 @@ from flask_cors import CORS
 from .utils.database import db
 from dotenv import load_dotenv
 import os
+import traceback
 
 def create_app():
     load_dotenv()
@@ -38,16 +39,29 @@ def create_app():
     app.register_blueprint(opciones_bp)
     app.register_blueprint(menu_bp)
 
+    # ✅ Crear tablas y roles por defecto una sola vez
     with app.app_context():
         from .models.usuario import Usuario
         from .models.rol import Rol
         from .models.usuario_rol import UsuarioRol
         from .models.opcionmenu import OpcionMenu
         from .models.perfil_menu import PerfilMenu
-        # db.create_all()
 
-    import traceback
+        # Crear tablas si no existen
+        db.create_all()
 
+        # Crear roles por defecto solo si la tabla está vacía
+        if not Rol.query.first():
+            roles_defecto = [
+                Rol(nombre_perfil="ADMIN"),
+                Rol(nombre_perfil="PACIENTE"),
+                Rol(nombre_perfil="DOCTOR")
+            ]
+            db.session.add_all(roles_defecto)
+            db.session.commit()
+            print("✅ Roles por defecto creados correctamente")
+
+    # Manejador global de errores
     @app.errorhandler(Exception)
     def handle_exception(e):
         print("\n========== ERROR DETECTADO ==========")
@@ -55,6 +69,4 @@ def create_app():
         print("=====================================\n")
         return {"error": str(e)}, 500
 
-
     return app
-

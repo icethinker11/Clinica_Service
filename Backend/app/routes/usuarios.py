@@ -15,28 +15,27 @@ def register():
     data = request.get_json()
 
     try:
+        # === Validaciones obligatorias ===
         dni = data.get("dni")
         correo = data.get("correo")
         password = data.get("password")
-        id_rol = data.get("id_rol")  # 👈 ahora viene desde el frontend
+        id_rol = data.get("id_rol")
 
-        if not dni or not correo or not password:
-            return jsonify({"error": "DNI, correo y contraseña son obligatorios"}), 400
+        if not dni or not correo or not password or not id_rol:
+            return jsonify({"error": "DNI, correo, contraseña y rol son obligatorios"}), 400
 
+        # === Validar duplicados ===
         if Usuario.query.filter_by(correo=correo).first():
             return jsonify({"error": "El correo ya está registrado"}), 400
         if Usuario.query.filter_by(dni=dni).first():
             return jsonify({"error": "El DNI ya está registrado"}), 400
 
-        # Validar que el rol exista
-        if not id_rol:
-            return jsonify({"error": "Debe seleccionar un rol"}), 400
-
+        # === Validar existencia del rol ===
         rol = Rol.query.get(id_rol)
         if not rol:
-            return jsonify({"error": "El rol seleccionado no existe"}), 400
+            return jsonify({"error": f"El rol con ID {id_rol} no existe"}), 400
 
-        # Procesar fecha de nacimiento
+        # === Validar formato de fecha ===
         fecha_nacimiento = None
         if data.get("fecha_nacimiento"):
             try:
@@ -44,7 +43,7 @@ def register():
             except ValueError:
                 return jsonify({"error": "Formato de fecha inválido. Use YYYY-MM-DD"}), 400
 
-        # Crear usuario
+        # === Crear usuario ===
         nuevo_usuario = Usuario(
             dni=dni,
             nombre=data.get("nombre"),
@@ -55,15 +54,31 @@ def register():
             direccion=data.get("direccion"),
             provincia=data.get("provincia"),
             telefono=data.get("telefono"),
-            estado_registro="ACTIVO",
-            id_rol=id_rol  # 👈 se guarda el rol directamente
+            estado_registro="ACTIVO"
         )
 
         nuevo_usuario.set_password(password)
         db.session.add(nuevo_usuario)
+        db.session.flush()  # ✅ obtener id_usuario
+
+        # === Asignar rol ===
+        nueva_relacion = UsuarioRol(
+            id_usuario=nuevo_usuario.id_usuario,
+            id_rol=id_rol,
+            estado_registro="ACTIVO"
+        )
+        db.session.add(nueva_relacion)
         db.session.commit()
 
-        return jsonify({"msg": "✅ Usuario registrado con éxito"}), 201
+        return jsonify({
+            "msg": "✅ Usuario registrado con éxito y rol asignado",
+            "usuario": {
+                "id_usuario": nuevo_usuario.id_usuario,
+                "nombre": nuevo_usuario.nombre,
+                "correo": nuevo_usuario.correo,
+                "rol": rol.nombre_perfil
+            }
+        }), 201
 
     except Exception as e:
         db.session.rollback()
@@ -77,23 +92,18 @@ def register():
 @usuarios_bp.route("/login", methods=["POST"])
 def login():
     data = request.get_json()
-
     try:
         usuario = Usuario.query.filter_by(correo=data.get("correo")).first()
 
-        # Validar usuario y contraseña
         if not usuario:
             return jsonify({"msg": "El correo no está registrado"}), 404
-
         if not usuario.check_password(data.get("password")):
             return jsonify({"msg": "Contraseña incorrecta"}), 401
-
         if usuario.estado_registro != "ACTIVO":
             return jsonify({"msg": "La cuenta está inactiva o suspendida"}), 403
 
-        # Si pasa todas las validaciones
         return jsonify({
-            "msg": "Login exitoso",
+            "msg": "✅ Login exitoso",
             "id_usuario": usuario.id_usuario,
             "nombre": usuario.nombre,
             "correo": usuario.correo
@@ -104,14 +114,26 @@ def login():
         return jsonify({"msg": f"Error al iniciar sesión: {str(e)}"}), 500
 
 
-
 # =========================================================
-# 📋 Listar usuarios
+# 📋 Listar usuarios (activos, inactivos o todos)
 # =========================================================
 @usuarios_bp.route("/", methods=["GET"])
 def listar_usuarios():
     try:
-        usuarios = Usuario.query.join(Rol).order_by(Usuario.fecha_creacion.desc()).all()
+        estado = request.args.get("estado")  # puede ser ACTIVO, INACTIVO o None
+
+        query = (
+            Usuario.query
+            .join(UsuarioRol, Usuario.id_usuario == UsuarioRol.id_usuario, isouter=True)
+            .join(Rol, UsuarioRol.id_rol == Rol.id_rol, isouter=True)
+            .order_by(Usuario.fecha_creacion.desc())
+        )
+
+        # ✅ Filtrar por estado solo si se envía
+        if estado:
+            query = query.filter(Usuario.estado_registro == estado)
+
+        usuarios = query.all()
 
         lista = [{
             "id_usuario": u.id_usuario,
@@ -125,15 +147,15 @@ def listar_usuarios():
             "provincia": u.provincia,
             "fecha_creacion": u.fecha_creacion.strftime("%Y-%m-%d %H:%M:%S"),
             "estado_registro": u.estado_registro,
-            "rol": u.rol.nombre_perfil if u.rol else "Sin rol asignado"
+            "rol": u.usuario_roles[0].rol.nombre_perfil if u.usuario_roles else "Sin rol asignado"
         } for u in usuarios]
 
+        print(f"📦 Usuarios encontrados ({estado or 'TODOS'}):", len(lista))
         return jsonify(lista), 200
 
     except Exception as e:
         print(f"❌ Error al listar usuarios: {e}")
         return jsonify({"error": f"Error al listar usuarios: {str(e)}"}), 500
-
 
 
 # =========================================================
@@ -146,7 +168,6 @@ def eliminar_usuario(id):
         if not usuario:
             return jsonify({"error": "Usuario no encontrado"}), 404
 
-        # Desactivar cuenta
         usuario.estado_registro = "INACTIVO"
         db.session.commit()
 
@@ -156,6 +177,7 @@ def eliminar_usuario(id):
         db.session.rollback()
         print(f"❌ Error al desactivar usuario: {e}")
         return jsonify({"error": f"Error al desactivar usuario: {str(e)}"}), 500
+
 
 # =========================================================
 # 🛠️ Actualizar usuario
@@ -169,7 +191,6 @@ def actualizar_usuario(id_usuario):
         if not usuario:
             return jsonify({"error": "Usuario no encontrado"}), 404
 
-        # Actualizar los datos básicos del usuario
         usuario.nombre = data.get("nombre", usuario.nombre)
         usuario.apellido_paterno = data.get("apellido_paterno", usuario.apellido_paterno)
         usuario.apellido_materno = data.get("apellido_materno", usuario.apellido_materno)
@@ -179,26 +200,18 @@ def actualizar_usuario(id_usuario):
         usuario.telefono = data.get("telefono", usuario.telefono)
         usuario.estado_registro = data.get("estado_registro", usuario.estado_registro)
 
-        # Si se envía una nueva contraseña
         nueva_contraseña = data.get("contraseña")
         if nueva_contraseña:
             usuario.set_password(nueva_contraseña)
 
-        # ✅ Actualizar el rol si viene en el payload
         id_rol = data.get("id_rol")
         if id_rol:
             relacion = UsuarioRol.query.filter_by(id_usuario=id_usuario).first()
-
             if relacion:
                 relacion.id_rol = id_rol
                 relacion.estado_registro = "ACTIVO"
             else:
-                nueva_relacion = UsuarioRol(
-                    id_usuario=id_usuario,
-                    id_rol=id_rol,
-                    estado_registro="ACTIVO"
-                )
-                db.session.add(nueva_relacion)
+                db.session.add(UsuarioRol(id_usuario=id_usuario, id_rol=id_rol, estado_registro="ACTIVO"))
 
         db.session.commit()
         return jsonify({"msg": "✅ Usuario actualizado correctamente"}), 200
@@ -210,3 +223,44 @@ def actualizar_usuario(id_usuario):
         traceback.print_exc()
         print("==============================================\n")
         return jsonify({"error": f"Error al actualizar usuario: {str(e)}"}), 500
+
+
+# =========================================================
+# 🔄 Reactivar usuario
+# =========================================================
+@usuarios_bp.route("/<int:id>/activar", methods=["PUT"])
+def activar_usuario(id):
+    try:
+        usuario = Usuario.query.get(id)
+        if not usuario:
+            return jsonify({"error": "Usuario no encontrado"}), 404
+
+        usuario.estado_registro = "ACTIVO"
+        db.session.commit()
+
+        return jsonify({"msg": f"✅ Usuario '{usuario.nombre}' activado correctamente"}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"❌ Error al activar usuario: {e}")
+        return jsonify({"error": f"Error al activar usuario: {str(e)}"}), 500
+
+# =========================================================
+# 🧹 Eliminar usuario definitivamente (borrado físico)
+# =========================================================
+@usuarios_bp.route("/<int:id>/delete", methods=["DELETE"])
+def eliminar_usuario_definitivo(id):
+    try:
+        usuario = Usuario.query.get(id)
+        if not usuario:
+            return jsonify({"error": "Usuario no encontrado"}), 404
+
+        db.session.delete(usuario)
+        db.session.commit()
+
+        return jsonify({"msg": f"🧹 Usuario '{usuario.nombre}' eliminado permanentemente"}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"❌ Error al eliminar usuario definitivamente: {e}")
+        return jsonify({"error": f"Error al eliminar usuario definitivamente: {str(e)}"}), 500

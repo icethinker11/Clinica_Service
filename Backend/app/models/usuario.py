@@ -20,9 +20,8 @@ class Usuario(db.Model):
     fecha_creacion = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     estado_registro = db.Column(db.String(20), default="ACTIVO", nullable=False)
 
-    # ✅ Relación directa con Rol
-    id_rol = db.Column(db.Integer, db.ForeignKey("rol.id_rol"), nullable=False)
-    rol = db.relationship("Rol", backref="usuarios")
+    # Relación muchos a muchos con Rol (a través de usuario_rol)
+    usuario_roles = db.relationship("UsuarioRol", back_populates="usuario", cascade="all, delete-orphan")
 
     def set_password(self, password: str):
         self.contraseña = generate_password_hash(password)
@@ -32,4 +31,5 @@ class Usuario(db.Model):
 
     def __repr__(self):
         return f"<Usuario {self.nombre} {self.apellido_paterno} ({self.correo})>"
+
 
