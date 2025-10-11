@@ -10,10 +10,13 @@ class UsuarioRol(db.Model):
     estado_registro = db.Column(db.String(20), default="ACTIVO", nullable=False)
     fecha_asignacion = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
-    usuario = db.relationship("Usuario", back_populates="roles")
+    # Relaciones bidireccionales
+    usuario = db.relationship("Usuario", back_populates="usuario_roles")
     rol = db.relationship("Rol", back_populates="usuarios")
 
     def __repr__(self):
         return f"<UsuarioRol usuario_id={self.id_usuario}, rol_id={self.id_rol}, estado={self.estado_registro}>"
+
+
 
 
