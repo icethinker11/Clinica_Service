@@ -101,7 +101,7 @@ export default function Register() {
         provincia: form.provincia,
         telefono: form.telefono,
         password: form.password,
-        id_rol: 1 // rol por defecto
+        id_rol: 4 // rol por defecto
       };
 
       const res = await registerUsuario(payload);

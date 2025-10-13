@@ -104,16 +104,25 @@ def login():
         if usuario.estado_registro != "ACTIVO":
             return jsonify({"msg": "La cuenta está inactiva o suspendida"}), 403
 
+        # ✅ Obtener el rol asociado
+        rol_relacion = UsuarioRol.query.filter_by(id_usuario=usuario.id_usuario).first()
+        rol_nombre = (
+            Rol.query.get(rol_relacion.id_rol).nombre_perfil.upper()
+            if rol_relacion else "SIN_ROL"
+        )
+
         return jsonify({
             "msg": "✅ Login exitoso",
             "id_usuario": usuario.id_usuario,
             "nombre": usuario.nombre,
-            "correo": usuario.correo
-        }), 201
+            "correo": usuario.correo,
+            "rol": rol_nombre  # 🔥 nuevo campo
+        }), 200
 
     except Exception as e:
         print("❌ Error al iniciar sesión:", str(e))
         return jsonify({"msg": f"Error al iniciar sesión: {str(e)}"}), 500
+
 
 
 # =========================================================
@@ -266,3 +275,8 @@ def eliminar_usuario_definitivo(id):
         db.session.rollback()
         print(f"❌ Error al eliminar usuario definitivamente: {e}")
         return jsonify({"error": f"Error al eliminar usuario definitivamente: {str(e)}"}), 500
+
+@usuarios_bp.route("/pacientes", methods=["GET"])
+def listar_pacientes():
+    pacientes = Usuario.query.join(UsuarioRol).filter(UsuarioRol.id_rol == 4).all()  # rol Paciente = id 4
+    return jsonify([...])

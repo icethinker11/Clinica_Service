@@ -17,23 +17,24 @@ export const registerUsuario = async (data) => {
 };
 
 // ======================================
-// 🔐 Login de usuario
+// 🔐 Login de usuario (actualizado)
 // ======================================
 export const loginUsuario = async (data) => {
   try {
     const response = await api.post("/usuarios/login", data);
 
-    // 🔹 El backend devuelve directamente los datos del usuario
+    // ✅ Incluye el rol que viene del backend
     const usuario = {
       id_usuario: response.data.id_usuario,
       nombre: response.data.nombre,
       correo: response.data.correo,
+      rol: response.data.rol, // 🔥 Aquí estaba el problema
     };
 
-    // Guarda el usuario en el localStorage
+    // Guarda todo el usuario (incluido el rol)
     localStorage.setItem("usuario", JSON.stringify(usuario));
 
-    // Devuelve todo (incluido el mensaje)
+    // Devuelve todos los datos junto con el mensaje
     return {
       msg: response.data.msg,
       ...usuario,
