@@ -14,12 +14,12 @@ export default function MenuAdmin() {
   const usuario = getUsuarioActual();
   const username = usuario?.nombre || "Administrador";
 
-  // 🔹 Estados de datos
+  //  Estados de datos
   const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([]);
   const [opciones, setOpciones] = useState([]);
 
-  // 🔹 Carga de datos
+  //  Carga de datos al inicio
   useEffect(() => {
     fetchUsuarios();
     fetchRoles();
@@ -87,11 +87,11 @@ export default function MenuAdmin() {
       case "inicio":
         return <PanelAdmin username={username} users={users} roles={roles} opciones={opciones} />;
       case "usuarios":
-        return <Usuarios />;
+        return <Usuarios users={users} />; // 🔹 opcional: pasar datos
       case "roles":
-        return <Roles />;
+        return <Roles roles={roles} />; // 🔹 opcional: pasar datos
       case "opciones":
-        return <Opciones />;
+        return <Opciones opciones={opciones} />; // 🔹 opcional: pasar datos
       default:
         return <PanelAdmin username={username} users={users} roles={roles} opciones={opciones} />;
     }
@@ -112,10 +112,11 @@ export default function MenuAdmin() {
       sidebarLogoutHoverColor="#1565C0"
       sidebarLogoutTextColor="white"
     >
-      {(activePage) => renderPage(activePage)}
+      {(activePage, setActivePage) => renderPage(activePage)}
     </PlantillaMenu>
   );
 }
+
 
 
 

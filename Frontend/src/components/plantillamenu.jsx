@@ -9,15 +9,15 @@ export default function PlantillaMenu({
   sidebarItems,
   children,
 
-  // 🔹 HEADER
-  headerInfo = {},           // Información dinámica por menú
+  //  HEADER
+  headerInfo = {},           
   headerBgColor = "#4E85EB",
   headerUserBgColor = "#184bac",
   headerTextColor = "white",
 
-  // 🔹 SIDEBAR
+  //  SIDEBAR
   sidebarBgColor = "#81ADFF",
-  sidebarTextColor = "gray-800",
+  sidebarTextColor = "white",
   sidebarHoverColor = "#5c7bb4",
   sidebarLogoutBgColor = "#466eb8",
   sidebarLogoutHoverColor = "#ee4e4e",
@@ -52,12 +52,17 @@ export default function PlantillaMenu({
                 label={item.label}
                 onClick={() => setActivePage(item.page)}
                 hoverColor={sidebarHoverColor}
+                textColor={sidebarTextColor}
+                active={activePage === item.page} // ✅ Destaca el ítem activo
               />
             ))}
           </ul>
         </nav>
 
-        <div className="mt-8 w-full rounded" style={{ backgroundColor: sidebarLogoutBgColor }}>
+        <div
+          className="mt-8 w-full rounded"
+          style={{ backgroundColor: sidebarLogoutBgColor }}
+        >
           <SidebarItem
             icon={FaSignOutAlt}
             label="Cerrar sesión"
@@ -68,9 +73,9 @@ export default function PlantillaMenu({
         </div>
       </aside>
 
-      {/* 🔹 CONTENEDOR PRINCIPAL */}
+      {/*  CONTENEDOR PRINCIPAL */}
       <main className="flex-1 flex flex-col">
-        {/* CABECERA FIJA con HeaderSection y colores ajustables */}
+        {/* CABECERA FIJA */}
         <HeaderSection
           title={title}
           description={description}
@@ -89,5 +94,6 @@ export default function PlantillaMenu({
     </div>
   );
 }
+
 
 

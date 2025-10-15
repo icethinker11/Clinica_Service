@@ -3,17 +3,14 @@ import Inicio from "./pages/inicio";
 import Login from "./pages/login";
 import Register from "./pages/register";
 import MenuAdmin from "./pages/menuAdmin";
-import MenuRecepcionista from "./pages/menuRecepcionista"; // 👈 nuevo menú
+import MenuRecepcionista from "./pages/menuRecepcionista";
 import { getUsuarioActual } from "./services/authService";
 
-// 🔐 Componente de protección de rutas
+//  Componente de protección de rutas
 function RutaPrivada({ children, roles }) {
   const usuario = getUsuarioActual();
 
-  // Si no hay usuario logueado
   if (!usuario) return <Navigate to="/login" replace />;
-
-  // Si el rol del usuario no está permitido
   if (roles && !roles.includes(usuario.id_rol)) {
     return <Navigate to="/inicio" replace />;
   }
@@ -25,18 +22,40 @@ function App() {
   return (
     <Router>
       <Routes>
-        
         <Route path="/" element={<Navigate to="/inicio" />} />
 
         {/* Páginas públicas */}
         <Route path="/inicio" element={<Inicio />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/menuAdmin" element={<Menu />} />
 
+        {/* Páginas privadas */}
+        <Route
+          path="/menuAdmin"
+          element={
+            <RutaPrivada roles={[1]}>
+              <MenuAdmin />
+            </RutaPrivada>
+          }
+        />
+        <Route
+          path="/menuRecepcionista"
+          element={
+            <RutaPrivada roles={[3]}>
+              <MenuRecepcionista />
+            </RutaPrivada>
+          }
+        />
 
-        {/* Si la ruta no existe */}
-        <Route path="*" element={<h1 className="text-center mt-20 text-2xl">404 - Page Not Found</h1>} />
+        {/* 404 */}
+        <Route
+          path="*"
+          element={
+            <h1 className="text-center mt-20 text-2xl">
+              404 - Page Not Found
+            </h1>
+          }
+        />
       </Routes>
     </Router>
   );

@@ -14,19 +14,12 @@ export default function Login() {
     title: "",
     message: "",
   });
-  const [popup, setPopup] = useState({
-    visible: false,
-    type: "success",
-    title: "",
-    message: "",
-  });
-
   const navigate = useNavigate();
 
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
 
-  // ✅ Función de login principal
+  //  Función de login principal
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
