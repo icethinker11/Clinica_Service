@@ -123,6 +123,7 @@ def login():
         return jsonify({"msg": f"Error al iniciar sesión: {str(e)}"}), 500
 
 
+
 # =========================================================
 # Listar usuarios (activos, inactivos o todos)
 # =========================================================
@@ -284,3 +285,8 @@ def eliminar_usuario_definitivo(id):
         db.session.rollback()
         print(f"Error al eliminar usuario definitivamente: {e}")
         return jsonify({"error": f"Error al eliminar usuario definitivamente: {str(e)}"}), 500
+
+@usuarios_bp.route("/pacientes", methods=["GET"])
+def listar_pacientes():
+    pacientes = Usuario.query.join(UsuarioRol).filter(UsuarioRol.id_rol == 4).all()  # rol Paciente = id 4
+    return jsonify([...])

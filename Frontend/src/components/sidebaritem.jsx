@@ -1,11 +1,12 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 
-export default function SidebarItem({ icon: Icon, label, onClick, hoverColor = "#e5e7eb" }) {
+export default function SidebarItem({ to, icon: Icon, label, hoverColor = "#e5e7eb" }) {
   const [isHover, setIsHover] = useState(false);
 
   return (
-    <li
-      onClick={onClick}
+    <Link
+      to={to}
       onMouseEnter={() => setIsHover(true)}
       onMouseLeave={() => setIsHover(false)}
       className={`flex items-center gap-3 cursor-pointer p-2 rounded-lg transition-all duration-200
@@ -25,6 +26,6 @@ export default function SidebarItem({ icon: Icon, label, onClick, hoverColor = "
       >
         {label}
       </span>
-    </li>
+    </Link>
   );
 }

@@ -14,12 +14,19 @@ export default function Login() {
     title: "",
     message: "",
   });
+  const [popup, setPopup] = useState({
+    visible: false,
+    type: "success",
+    title: "",
+    message: "",
+  });
 
   const navigate = useNavigate();
 
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
 
+  // ✅ Función de login principal
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
@@ -76,6 +83,7 @@ export default function Login() {
     <div className="min-h-screen w-full grid grid-cols-5 bg-[url('/fondo.jpg')] bg-cover bg-center">
       <div className="col-span-3"></div>
 
+      {/* Lado derecho con el formulario */}
       <div className="col-span-2 flex items-center justify-center bg-white bg-opacity-80 min-h-screen shadow-lg p-8">
         <form
           className="w-full max-w-md flex flex-col gap-4 text-black"
@@ -90,21 +98,8 @@ export default function Login() {
             credenciales.
           </p>
 
-          <Input
-            name="correo"
-            placeholder="Correo"
-            value={form.correo}
-            onChange={handleChange}
-            icon={<FaUser />}
-          />
-          <Input
-            type="password"
-            name="password"
-            placeholder="Contraseña"
-            value={form.password}
-            onChange={handleChange}
-            icon={<FaLock />}
-          />
+          <Input name="correo" placeholder="Correo" value={form.correo} onChange={handleChange} icon={<FaUser />} />
+          <Input type="password" name="password" placeholder="Contraseña" value={form.password} onChange={handleChange} icon={<FaLock />} />
 
           <div className="text-right text-sm font-bold text-[#4495C0] cursor-pointer hover:underline">
             ¿Olvidaste tu contraseña?
@@ -124,6 +119,7 @@ export default function Login() {
         </form>
       </div>
 
+      {/* ✅ Popup de estado */}
       {popup.visible && (
         <StatusPopup
           type={popup.type}

@@ -17,7 +17,7 @@ export const registerUsuario = async (data) => {
 };
 
 // ======================================
-// 🔐 Login de usuario
+// 🔐 Login de usuario (actualizado)
 // ======================================
 export const loginUsuario = async (data) => {
   try {
