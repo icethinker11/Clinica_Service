@@ -4,7 +4,7 @@ import Button from "../components/button";
 import { Link } from "react-router-dom";
 import { FaEnvelope, FaLock, FaIdCard, FaPhone, FaUserTag, FaMapMarkerAlt } from "react-icons/fa";
 import { registerUsuario } from "../services/authService";
-import StatusPopup from "../components/StatusPopup";
+import StatusPopup from "../components/statuspopup";
 
 export default function Register() {
   const [form, setForm] = useState({
@@ -106,7 +106,7 @@ export default function Register() {
 
       const res = await registerUsuario(payload);
 
-      // ✅ Aquí ya usamos res.msg directamente
+      // Aquí ya usamos res.msg directamente
       const mensaje = res?.msg || res?.message || "Usuario registrado correctamente";
 
       setPopup({
@@ -176,7 +176,7 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen w-full grid grid-cols-5 bg-[url('/fondoprueba.jpg')] bg-cover bg-center">
+    <div className="min-h-screen w-full grid grid-cols-5 bg-[url('/fondo.jpg')] bg-cover bg-center">
       <div className="col-span-3"></div>
       <div className="col-span-2 flex items-center justify-center bg-white bg-opacity-80 shadow-lg min-h-screen">
         <form onSubmit={handleRegister} className="w-4/6 flex flex-col gap-3 text-black">

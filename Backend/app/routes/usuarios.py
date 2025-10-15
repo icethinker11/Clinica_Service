@@ -13,7 +13,6 @@ usuarios_bp = Blueprint("usuarios", __name__, url_prefix="/api/usuarios")
 @usuarios_bp.route("/register", methods=["POST"])
 def register():
     data = request.get_json()
-
     try:
         # === Validaciones obligatorias ===
         dni = data.get("dni")
@@ -31,7 +30,6 @@ def register():
 
         # === Asignar rol por defecto ===
         id_rol = data.get("id_rol", 1)  # 1 = Usuario por defecto
-
         rol = Rol.query.get(id_rol)
         if not rol:
             return jsonify({"error": f"El rol con ID {id_rol} no existe"}), 400
@@ -60,7 +58,7 @@ def register():
 
         nuevo_usuario.set_password(password)
         db.session.add(nuevo_usuario)
-        db.session.flush()  # ✅ obtener id_usuario
+        db.session.flush()  # obtener id_usuario
 
         # === Asignar rol ===
         nueva_relacion = UsuarioRol(
@@ -72,24 +70,24 @@ def register():
         db.session.commit()
 
         return jsonify({
-            "msg": "✅ Usuario registrado con éxito y rol asignado",
+            "msg": "Usuario registrado con éxito y rol asignado",
             "usuario": {
                 "id_usuario": nuevo_usuario.id_usuario,
                 "nombre": nuevo_usuario.nombre,
                 "correo": nuevo_usuario.correo,
+                "id_rol": rol.id_rol,
                 "rol": rol.nombre_perfil
             }
         }), 200
 
     except Exception as e:
         db.session.rollback()
-        print(f"❌ Error al registrar usuario: {e}")
+        print(f"Error al registrar usuario: {e}")
         return jsonify({"error": f"Error al registrar usuario: {str(e)}"}), 500
 
 
-
 # =========================================================
-# 🔐 Login de usuario
+# Login de usuario
 # =========================================================
 @usuarios_bp.route("/login", methods=["POST"])
 def login():
@@ -104,25 +102,34 @@ def login():
         if usuario.estado_registro != "ACTIVO":
             return jsonify({"msg": "La cuenta está inactiva o suspendida"}), 403
 
+        # Obtener rol (el primero activo)
+        rol_asignado = None
+        for ur in usuario.usuario_roles:
+            if ur.estado_registro == "ACTIVO":
+                rol_asignado = ur.rol
+                break
+
         return jsonify({
-            "msg": "✅ Login exitoso",
+            "msg": "Login exitoso",
             "id_usuario": usuario.id_usuario,
             "nombre": usuario.nombre,
-            "correo": usuario.correo
+            "correo": usuario.correo,
+            "id_rol": rol_asignado.id_rol if rol_asignado else None,
+            "rol": rol_asignado.nombre_perfil if rol_asignado else "Sin rol asignado"
         }), 201
 
     except Exception as e:
-        print("❌ Error al iniciar sesión:", str(e))
+        print("Error al iniciar sesión:", str(e))
         return jsonify({"msg": f"Error al iniciar sesión: {str(e)}"}), 500
 
 
 # =========================================================
-# 📋 Listar usuarios (activos, inactivos o todos)
+# Listar usuarios (activos, inactivos o todos)
 # =========================================================
 @usuarios_bp.route("/", methods=["GET"])
 def listar_usuarios():
     try:
-        estado = request.args.get("estado")  # puede ser ACTIVO, INACTIVO o None
+        estado = request.args.get("estado")  # ACTIVO, INACTIVO o None
 
         query = (
             Usuario.query
@@ -131,7 +138,6 @@ def listar_usuarios():
             .order_by(Usuario.fecha_creacion.desc())
         )
 
-        # ✅ Filtrar por estado solo si se envía
         if estado:
             query = query.filter(Usuario.estado_registro == estado)
 
@@ -147,8 +153,10 @@ def listar_usuarios():
             "telefono": u.telefono,
             "direccion": u.direccion,
             "provincia": u.provincia,
+            "fecha_nacimiento": u.fecha_nacimiento.strftime("%Y-%m-%d") if u.fecha_nacimiento else None,
             "fecha_creacion": u.fecha_creacion.strftime("%Y-%m-%d %H:%M:%S"),
             "estado_registro": u.estado_registro,
+            "id_rol": u.usuario_roles[0].rol.id_rol if u.usuario_roles else None,
             "rol": u.usuario_roles[0].rol.nombre_perfil if u.usuario_roles else "Sin rol asignado"
         } for u in usuarios]
 
@@ -156,12 +164,12 @@ def listar_usuarios():
         return jsonify(lista), 200
 
     except Exception as e:
-        print(f"❌ Error al listar usuarios: {e}")
+        print(f"Error al listar usuarios: {e}")
         return jsonify({"error": f"Error al listar usuarios: {str(e)}"}), 500
 
 
 # =========================================================
-# 🗑️ Desactivar usuario (borrado lógico)
+# Desactivar usuario (borrado lógico)
 # =========================================================
 @usuarios_bp.route("/<int:id>", methods=["DELETE"])
 def eliminar_usuario(id):
@@ -177,12 +185,12 @@ def eliminar_usuario(id):
 
     except Exception as e:
         db.session.rollback()
-        print(f"❌ Error al desactivar usuario: {e}")
+        print(f"Error al desactivar usuario: {e}")
         return jsonify({"error": f"Error al desactivar usuario: {str(e)}"}), 500
 
 
 # =========================================================
-# 🛠️ Actualizar usuario
+# Actualizar usuario
 # =========================================================
 @usuarios_bp.route("/<int:id_usuario>", methods=["PUT"])
 def actualizar_usuario(id_usuario):
@@ -202,10 +210,19 @@ def actualizar_usuario(id_usuario):
         usuario.telefono = data.get("telefono", usuario.telefono)
         usuario.estado_registro = data.get("estado_registro", usuario.estado_registro)
 
+        # Fecha de nacimiento
+        if data.get("fecha_nacimiento"):
+            try:
+                usuario.fecha_nacimiento = datetime.strptime(data["fecha_nacimiento"], "%Y-%m-%d").date()
+            except ValueError:
+                return jsonify({"error": "Formato de fecha inválido. Use YYYY-MM-DD"}), 400
+
+        # Contraseña opcional
         nueva_contraseña = data.get("contraseña")
         if nueva_contraseña:
             usuario.set_password(nueva_contraseña)
 
+        # Rol
         id_rol = data.get("id_rol")
         if id_rol:
             relacion = UsuarioRol.query.filter_by(id_usuario=id_usuario).first()
@@ -216,7 +233,7 @@ def actualizar_usuario(id_usuario):
                 db.session.add(UsuarioRol(id_usuario=id_usuario, id_rol=id_rol, estado_registro="ACTIVO"))
 
         db.session.commit()
-        return jsonify({"msg": "✅ Usuario actualizado correctamente"}), 200
+        return jsonify({"msg": "Usuario actualizado correctamente"}), 200
 
     except Exception as e:
         db.session.rollback()
@@ -228,7 +245,7 @@ def actualizar_usuario(id_usuario):
 
 
 # =========================================================
-# 🔄 Reactivar usuario
+# Reactivar usuario
 # =========================================================
 @usuarios_bp.route("/<int:id>/activar", methods=["PUT"])
 def activar_usuario(id):
@@ -240,15 +257,16 @@ def activar_usuario(id):
         usuario.estado_registro = "ACTIVO"
         db.session.commit()
 
-        return jsonify({"msg": f"✅ Usuario '{usuario.nombre}' activado correctamente"}), 200
+        return jsonify({"msg": f"Usuario '{usuario.nombre}' activado correctamente"}), 200
 
     except Exception as e:
         db.session.rollback()
-        print(f"❌ Error al activar usuario: {e}")
+        print(f"Error al activar usuario: {e}")
         return jsonify({"error": f"Error al activar usuario: {str(e)}"}), 500
 
+
 # =========================================================
-# 🧹 Eliminar usuario definitivamente (borrado físico)
+# Eliminar usuario definitivamente (borrado físico)
 # =========================================================
 @usuarios_bp.route("/<int:id>/delete", methods=["DELETE"])
 def eliminar_usuario_definitivo(id):
@@ -264,5 +282,5 @@ def eliminar_usuario_definitivo(id):
 
     except Exception as e:
         db.session.rollback()
-        print(f"❌ Error al eliminar usuario definitivamente: {e}")
+        print(f"Error al eliminar usuario definitivamente: {e}")
         return jsonify({"error": f"Error al eliminar usuario definitivamente: {str(e)}"}), 500

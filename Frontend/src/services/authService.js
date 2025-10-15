@@ -23,17 +23,19 @@ export const loginUsuario = async (data) => {
   try {
     const response = await api.post("/usuarios/login", data);
 
-    // 🔹 El backend devuelve directamente los datos del usuario
+    // 🔹 Extraer datos completos incluyendo rol si el backend lo devuelve
     const usuario = {
       id_usuario: response.data.id_usuario,
       nombre: response.data.nombre,
       correo: response.data.correo,
+      id_rol: response.data.id_rol || 1,   // Valor por defecto si no viene
+      rol: response.data.rol || "",        // Nombre del rol, opcional
     };
 
-    // Guarda el usuario en el localStorage
+    // Guarda el usuario completo en localStorage
     localStorage.setItem("usuario", JSON.stringify(usuario));
 
-    // Devuelve todo (incluido el mensaje)
+    // Devuelve mensaje y usuario
     return {
       msg: response.data.msg,
       ...usuario,
@@ -60,3 +62,4 @@ export const getUsuarioActual = () => {
   const usuario = localStorage.getItem("usuario");
   return usuario ? JSON.parse(usuario) : null;
 };
+
